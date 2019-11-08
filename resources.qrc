@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/plugins/ActivitatsEconomiques" >
+        <file>icon.png</file>
+    </qresource>
+</RCC>
