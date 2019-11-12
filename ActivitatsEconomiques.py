@@ -81,7 +81,7 @@ micolor_ZI=None
 micolor_Graf=None
 Fitxer=""
 Path_Inicial=expanduser("~")
-Versio_modul="V_Q3.191107"
+Versio_modul="V_Q3.191112"
 progress=None
 
 class ActivitatsEconomiques:
@@ -733,7 +733,7 @@ class ActivitatsEconomiques:
         XarxaCarrers = "SegmentsXarxaCarrers" #self.dlg.comboGraf.currentText()
         sql_1="DROP TABLE IF EXISTS \"Xarxa_Graf\";\n"
         """ Es fa una copia de la taula que cont� el graf i s'afegeixen els camps cost i reverse_cost en funci� del que es necessiti, es crear� taula local temporal per evitar problemes de concurrencia"""
-        sql_1+="CREATE local temporary TABLE IF NOT EXISTS \"Xarxa_Graf\" as (SELECT * FROM \"" + XarxaCarrers + "\");\n"
+        sql_1+="CREATE local temporary TABLE \"Xarxa_Graf\" as (SELECT * FROM \"" + XarxaCarrers + "\");\n"
         if (self.dlg.GrafCombo.currentText()=="Distancia"):
             """S'aplica com a cost tant directe com invers el valor de la longitud del segment"""
             sql_1+="UPDATE \"Xarxa_Graf\" set \"cost\"=st_length(\"the_geom\"), \"reverse_cost\"=st_length(\"the_geom\");\n"
@@ -762,7 +762,7 @@ class ActivitatsEconomiques:
         sql_1="drop table if exists punts_interes_tmp;\n"
         
         """Es crea la taula punts_interes_tmp seleccionant el centroide de la entitat seleccionada, utilizant un radi fix"""
-        sql_1+="CREATE local temporary TABLE if not exists punts_interes_tmp as (SELECT ST_Centroid(tmp.\""+geometria+"\") the_geom,tmp.\"ogc_fid\" as pid from ("+sql_buff+") tmp);\n"
+        sql_1+="CREATE local temporary TABLE punts_interes_tmp as (SELECT ST_Centroid(tmp.\""+geometria+"\") the_geom,tmp.\"ogc_fid\" as pid from ("+sql_buff+") tmp);\n"
             
         #sql_1+="ALTER TABLE punts_interes_tmp ADD COLUMN pid BIGSERIAL PRIMARY KEY;\n"
         sql_1+="ALTER TABLE punts_interes_tmp ADD COLUMN     x FLOAT;\n"
@@ -800,7 +800,7 @@ class ActivitatsEconomiques:
         sql_1+="DROP TABLE IF EXISTS tbl_punts_finals_tmp;\n"
 
         """Creació de la taula 'tbl_punts_finsl_tmp' on es tindrà tots els nodes de la xarxa que son a dins del radi fix d'acci� indicat"""
-        sql_1+="CREATE local temporary TABLE IF NOT EXISTS tbl_punts_finals_tmp AS(SELECT node,agg_cost,start_vid FROM pgr_withPointsDD('SELECT id, source, target, cost, reverse_cost FROM \"Xarxa_Graf\" ORDER BY \"Xarxa_Graf\".id','SELECT pid, edge_id, fraction, side from \"punts_interes_tmp\"',array(select \"pid\"*(-1) from \"punts_interes_tmp\"),"+self.dlg.Radi_ZI.text()+",driving_side := 'b',details := false));\n"
+        sql_1+="CREATE local temporary TABLE tbl_punts_finals_tmp AS(SELECT node,agg_cost,start_vid FROM pgr_withPointsDD('SELECT id, source, target, cost, reverse_cost FROM \"Xarxa_Graf\" ORDER BY \"Xarxa_Graf\".id','SELECT pid, edge_id, fraction, side from \"punts_interes_tmp\"',array(select \"pid\"*(-1) from \"punts_interes_tmp\"),"+self.dlg.Radi_ZI.text()+",driving_side := 'b',details := false));\n"
         #print sql_1
         
         try:
@@ -833,8 +833,8 @@ class ActivitatsEconomiques:
 #       *****************************************************************************************************************
         sql_1="DROP table if exists geo_punts_finals_tmp;\n"
         """Creació de la taula 'geo_punts_finals_tmp' on estan tots els nodes de la xarxa que son a dins del radi fix amb la geometria inclosa"""
-        sql_1+="CREATE local temporary TABLE IF NOT EXISTS geo_punts_finals_tmp as (select \"" + XarxaCarrers + "_vertices_pgr\".*,\"tbl_punts_finals_tmp\".\"agg_cost\", \"tbl_punts_finals_tmp\".\"start_vid\", "+self.dlg.Radi_ZI.text()+" from \"" + XarxaCarrers + "_vertices_pgr\",\"tbl_punts_finals_tmp\" where \"" + XarxaCarrers + "_vertices_pgr\".\"id\" =\"tbl_punts_finals_tmp\".\"node\" order by \"tbl_punts_finals_tmp\".\"start_vid\" desc,\"tbl_punts_finals_tmp\".\"agg_cost\");\n"
-        sql_1+="CREATE local temporary TABLE IF NOT EXISTS geo_punts_finals_tmp as (select \"SegmentsXarxaCarrers_vertices_pgr\".*,\"tbl_punts_finals_tmp\".\"agg_cost\", \"tbl_punts_finals_tmp\".\"start_vid\" from \"SegmentsXarxaCarrers_vertices_pgr\",\"tbl_punts_finals_tmp\" where \"SegmentsXarxaCarrers_vertices_pgr\".\"id\" =\"tbl_punts_finals_tmp\".\"node\");\n"
+        sql_1+="CREATE local temporary TABLE geo_punts_finals_tmp as (select \"" + XarxaCarrers + "_vertices_pgr\".*,\"tbl_punts_finals_tmp\".\"agg_cost\", \"tbl_punts_finals_tmp\".\"start_vid\", "+self.dlg.Radi_ZI.text()+" from \"" + XarxaCarrers + "_vertices_pgr\",\"tbl_punts_finals_tmp\" where \"" + XarxaCarrers + "_vertices_pgr\".\"id\" =\"tbl_punts_finals_tmp\".\"node\" order by \"tbl_punts_finals_tmp\".\"start_vid\" desc,\"tbl_punts_finals_tmp\".\"agg_cost\");\n"
+        #sql_1+="CREATE local temporary TABLE geo_punts_finals_tmp as (select \"SegmentsXarxaCarrers_vertices_pgr\".*,\"tbl_punts_finals_tmp\".\"agg_cost\", \"tbl_punts_finals_tmp\".\"start_vid\" from \"SegmentsXarxaCarrers_vertices_pgr\",\"tbl_punts_finals_tmp\" where \"SegmentsXarxaCarrers_vertices_pgr\".\"id\" =\"tbl_punts_finals_tmp\".\"node\");\n"
         #print sql_1
         try:
             cur.execute(sql_1)
@@ -871,17 +871,17 @@ class ActivitatsEconomiques:
             """Si s'ha escollit calcula mitjançant distancia """
             #sql per distancia
             """Creació de la taula que contindrà els trams que formen part del radi d'acció indicat, si el radi escollit es un radi fix"""
-            sql_1+="CREATE local temporary TABLE IF NOT EXISTS trams_finals_tmp as (select \"Xarxa_Graf\".\"id\",\"Xarxa_Graf\".\"the_geom\",\"geo_punts_finals_tmp\".\"id\" as node,\"geo_punts_finals_tmp\".\"agg_cost\" as coste,("+self.dlg.Radi_ZI.text()+"-\"geo_punts_finals_tmp\".\"agg_cost\") as falta,\"geo_punts_finals_tmp\".\"start_vid\" as id_punt, (select case when ("+self.dlg.Radi_ZI.text()+"-\"geo_punts_finals_tmp\".\"agg_cost\")/ST_Length(\"Xarxa_Graf\".\"the_geom\")<=1 then ("+self.dlg.Radi_ZI.text()+"-\"geo_punts_finals_tmp\".\"agg_cost\")/ST_Length(\"Xarxa_Graf\".\"the_geom\") when ("+self.dlg.Radi_ZI.text()+"-\"geo_punts_finals_tmp\".\"agg_cost\")/ST_Length(\"Xarxa_Graf\".\"the_geom\")>1 then (1) end) as fraccio from \"Xarxa_Graf\",\"geo_punts_finals_tmp\" where ST_DWithin(\"geo_punts_finals_tmp\".\"the_geom\",\"Xarxa_Graf\".\"the_geom\",1)=TRUE);\n"
+            sql_1+="CREATE local temporary TABLE trams_finals_tmp as (select \"Xarxa_Graf\".\"id\",\"Xarxa_Graf\".\"the_geom\",\"geo_punts_finals_tmp\".\"id\" as node,\"geo_punts_finals_tmp\".\"agg_cost\" as coste,("+self.dlg.Radi_ZI.text()+"-\"geo_punts_finals_tmp\".\"agg_cost\") as falta,\"geo_punts_finals_tmp\".\"start_vid\" as id_punt, (select case when ("+self.dlg.Radi_ZI.text()+"-\"geo_punts_finals_tmp\".\"agg_cost\")/ST_Length(\"Xarxa_Graf\".\"the_geom\")<=1 then ("+self.dlg.Radi_ZI.text()+"-\"geo_punts_finals_tmp\".\"agg_cost\")/ST_Length(\"Xarxa_Graf\".\"the_geom\") when ("+self.dlg.Radi_ZI.text()+"-\"geo_punts_finals_tmp\".\"agg_cost\")/ST_Length(\"Xarxa_Graf\".\"the_geom\")>1 then (1) end) as fraccio from \"Xarxa_Graf\",\"geo_punts_finals_tmp\" where ST_DWithin(\"geo_punts_finals_tmp\".\"the_geom\",\"Xarxa_Graf\".\"the_geom\",1)=TRUE);\n"
         else:
             """Si s'ha escollit calcula mitjançant Temps """
             if (self.dlg.CostInvers_chk.isChecked()):
                 #sql per temps i cost invers
                 """Creació de la taula que contindrà els trams que formen part del radi d'acció indicat, si el radi escollit es un radi fix"""
-                sql_1+="CREATE local temporary TABLE IF NOT EXISTS trams_finals_tmp as (select \"Xarxa_Graf\".\"id\",\"Xarxa_Graf\".\"cost\",\"Xarxa_Graf\".\"reverse_cost\",\"Xarxa_Graf\".\"the_geom\",\"geo_punts_finals_tmp\".\"id\" as node,\"geo_punts_finals_tmp\".\"agg_cost\" as coste,("+self.dlg.Radi_ZI.text()+"-\"geo_punts_finals_tmp\".\"agg_cost\") as falta,\"geo_punts_finals_tmp\".\"start_vid\" as id_punt, (select case when (("+self.dlg.Radi_ZI.text()+"-\"geo_punts_finals_tmp\".\"agg_cost\")/(CASE WHEN \"geo_punts_finals_tmp\".\"id\"=\"Xarxa_Graf\".\"target\" THEN \"Xarxa_Graf\".\"reverse_cost\" ELSE \"Xarxa_Graf\".\"cost\" END))<=1 then (("+self.dlg.Radi_ZI.text()+"-\"geo_punts_finals_tmp\".\"agg_cost\")/(CASE WHEN \"geo_punts_finals_tmp\".\"id\"=\"Xarxa_Graf\".\"target\" THEN \"Xarxa_Graf\".\"reverse_cost\" ELSE \"Xarxa_Graf\".\"cost\" END)) when (("+self.dlg.Radi_ZI.text()+"-\"geo_punts_finals_tmp\".\"agg_cost\")/(CASE WHEN \"geo_punts_finals_tmp\".\"id\"=\"Xarxa_Graf\".\"target\" THEN \"Xarxa_Graf\".\"reverse_cost\" ELSE \"Xarxa_Graf\".\"cost\" END))>1 then (1) end) as fraccio from \"Xarxa_Graf\",\"geo_punts_finals_tmp\" where ST_DWithin(\"geo_punts_finals_tmp\".\"the_geom\",\"Xarxa_Graf\".\"the_geom\",1)=TRUE);\n"
+                sql_1+="CREATE local temporary TABLE trams_finals_tmp as (select \"Xarxa_Graf\".\"id\",\"Xarxa_Graf\".\"cost\",\"Xarxa_Graf\".\"reverse_cost\",\"Xarxa_Graf\".\"the_geom\",\"geo_punts_finals_tmp\".\"id\" as node,\"geo_punts_finals_tmp\".\"agg_cost\" as coste,("+self.dlg.Radi_ZI.text()+"-\"geo_punts_finals_tmp\".\"agg_cost\") as falta,\"geo_punts_finals_tmp\".\"start_vid\" as id_punt, (select case when (("+self.dlg.Radi_ZI.text()+"-\"geo_punts_finals_tmp\".\"agg_cost\")/(CASE WHEN \"geo_punts_finals_tmp\".\"id\"=\"Xarxa_Graf\".\"target\" THEN \"Xarxa_Graf\".\"reverse_cost\" ELSE \"Xarxa_Graf\".\"cost\" END))<=1 then (("+self.dlg.Radi_ZI.text()+"-\"geo_punts_finals_tmp\".\"agg_cost\")/(CASE WHEN \"geo_punts_finals_tmp\".\"id\"=\"Xarxa_Graf\".\"target\" THEN \"Xarxa_Graf\".\"reverse_cost\" ELSE \"Xarxa_Graf\".\"cost\" END)) when (("+self.dlg.Radi_ZI.text()+"-\"geo_punts_finals_tmp\".\"agg_cost\")/(CASE WHEN \"geo_punts_finals_tmp\".\"id\"=\"Xarxa_Graf\".\"target\" THEN \"Xarxa_Graf\".\"reverse_cost\" ELSE \"Xarxa_Graf\".\"cost\" END))>1 then (1) end) as fraccio from \"Xarxa_Graf\",\"geo_punts_finals_tmp\" where ST_DWithin(\"geo_punts_finals_tmp\".\"the_geom\",\"Xarxa_Graf\".\"the_geom\",1)=TRUE);\n"
             else:
                 #sql per temps i sense cost invers
                 """Creació de la taula que contindrà els trams que formen part del radi d'acció indicat, si el radi escollit es un radi fix"""
-                sql_1+="CREATE local temporary TABLE IF NOT EXISTS trams_finals_tmp as (select \"Xarxa_Graf\".\"id\",\"Xarxa_Graf\".\"cost\",\"Xarxa_Graf\".\"reverse_cost\",\"Xarxa_Graf\".\"the_geom\",\"geo_punts_finals_tmp\".\"id\" as node,\"geo_punts_finals_tmp\".\"agg_cost\" as coste,("+self.dlg.Radi_ZI.text()+"-\"geo_punts_finals_tmp\".\"agg_cost\") as falta,\"geo_punts_finals_tmp\".\"start_vid\" as id_punt, (select case when (("+self.dlg.Radi_ZI.text()+"-\"geo_punts_finals_tmp\".\"agg_cost\")/(\"Xarxa_Graf\".\"cost\"))<=1 then (("+self.dlg.Radi_ZI.text()+"-\"geo_punts_finals_tmp\".\"agg_cost\")/(\"Xarxa_Graf\".\"cost\")) when (("+self.dlg.Radi_ZI.text()+"-\"geo_punts_finals_tmp\".\"agg_cost\")/(\"Xarxa_Graf\".\"cost\"))>1 then (1) end) as fraccio from \"Xarxa_Graf\",\"geo_punts_finals_tmp\" where ST_DWithin(\"geo_punts_finals_tmp\".\"the_geom\",\"Xarxa_Graf\".\"the_geom\",1)=TRUE);\n"
+                sql_1+="CREATE local temporary TABLE trams_finals_tmp as (select \"Xarxa_Graf\".\"id\",\"Xarxa_Graf\".\"cost\",\"Xarxa_Graf\".\"reverse_cost\",\"Xarxa_Graf\".\"the_geom\",\"geo_punts_finals_tmp\".\"id\" as node,\"geo_punts_finals_tmp\".\"agg_cost\" as coste,("+self.dlg.Radi_ZI.text()+"-\"geo_punts_finals_tmp\".\"agg_cost\") as falta,\"geo_punts_finals_tmp\".\"start_vid\" as id_punt, (select case when (("+self.dlg.Radi_ZI.text()+"-\"geo_punts_finals_tmp\".\"agg_cost\")/(\"Xarxa_Graf\".\"cost\"))<=1 then (("+self.dlg.Radi_ZI.text()+"-\"geo_punts_finals_tmp\".\"agg_cost\")/(\"Xarxa_Graf\".\"cost\")) when (("+self.dlg.Radi_ZI.text()+"-\"geo_punts_finals_tmp\".\"agg_cost\")/(\"Xarxa_Graf\".\"cost\"))>1 then (1) end) as fraccio from \"Xarxa_Graf\",\"geo_punts_finals_tmp\" where ST_DWithin(\"geo_punts_finals_tmp\".\"the_geom\",\"Xarxa_Graf\".\"the_geom\",1)=TRUE);\n"
         #print sql_1
         try:
             cur.execute(sql_1)
@@ -1268,7 +1268,7 @@ class ActivitatsEconomiques:
 #       *****************************************************************************************************************
         """ Es fa la uni� de tots els trams des del servidor POSTGRES dins de la taula Graf_utilitzat_(data)"""
         sql_1="drop table if exists Graf_utilitzat_"+Fitxer+";\n"
-        sql_1+="CREATE TABLE IF NOT EXISTS Graf_utilitzat_"+Fitxer+" AS (Select ST_Union(TOT.the_geom) the_geom, TOT.\"punt_id\" as id from (select the_geom,punt_id,radi_inic from fraccio_trams_tmp) TOT group by TOT.\"punt_id\");\n"
+        sql_1+="CREATE TABLE Graf_utilitzat_"+Fitxer+" AS (Select ST_Union(TOT.the_geom) the_geom, TOT.\"punt_id\" as id from (select the_geom,punt_id,radi_inic from fraccio_trams_tmp) TOT group by TOT.\"punt_id\");\n"
         try:
             cur.execute(sql_1)
             conn.commit()
@@ -1298,7 +1298,7 @@ class ActivitatsEconomiques:
 #       INICI CREACIO TAULA BUFFER_FINAL_(DATA) QUE CONTINDRA EL BUFFER DE LA UNIO DELS TRAMS 
 #       *****************************************************************************************************************
         sql_1+="drop table if exists Buffer_Final_"+Fitxer+";\n"
-        sql_1+="CREATE TABLE IF NOT EXISTS Buffer_Final_"+Fitxer+" AS (Select ST_Union(TOT.the_geom) the_geom, TOT.\"punt_id\" from (Select ST_Buffer(the_geom,"+self.dlg.Radi_ZI_3.text()+") the_geom,punt_id from fraccio_trams_tmp)TOT group by TOT.\"punt_id\");\n"
+        sql_1+="CREATE TABLE Buffer_Final_"+Fitxer+" AS (Select ST_Union(TOT.the_geom) the_geom, TOT.\"punt_id\" from (Select ST_Buffer(the_geom,"+self.dlg.Radi_ZI_3.text()+") the_geom,punt_id from fraccio_trams_tmp)TOT group by TOT.\"punt_id\");\n"
             
         try:
             cur.execute(sql_1)
