@@ -81,7 +81,7 @@ micolor_ZI=None
 micolor_Graf=None
 Fitxer=""
 Path_Inicial=expanduser("~")
-Versio_modul="V_Q3.191112"
+Versio_modul="V_Q3.191113"
 progress=None
 
 class ActivitatsEconomiques:
@@ -495,7 +495,7 @@ class ActivitatsEconomiques:
             if tipus in ('ST_LineString','ST_MultiLineString'):
                 myListLayers.append(layername)
         #myListLayers = [layername for layername in layers if self.getGeometryType(layername) in ('ST_LineString','ST_MultiLineString')]
-        self.dlg.GrafCombo.addItems( myListLayers )
+        self.dlg.comboGraf.addItems( myListLayers )
 
     
     def cercaEpigraf(self):
@@ -667,6 +667,32 @@ class ActivitatsEconomiques:
         """Aquesta es una funcio fa una crida a una funci� auxiliar"""
         self.Canvia_label_ZI()
         
+        
+        
+    def on_Change_ComboGraf(self, state):
+        """
+        En el moment en que es modifica la opcio escollida 
+        del combo o desplegable de la capa de punts,
+        automÃ ticament comprova els camps de la taula escollida.
+        """
+        capa=self.dlg.comboGraf.currentText()
+        if capa != "":
+            if capa != 'Selecciona una entitat':
+                if (self.grafValid(capa)):
+                    pass
+                else:
+                    QMessageBox.information(None, "Error", 'El graf seleccionat no té la capa de nusos corresponent.\nEscolliu un altre.')
+    
+    def grafValid(self, taula):
+        """Aquesta funció comprova si la taula que li hem passat té la seva capa de graf corresponent"""
+        global cur
+        global conn
+        sql = "select exists (select 1 from geometry_columns where f_table_name = '" + taula + "_vertices_pgr')"
+        cur.execute(sql)
+        camp = cur.fetchall()
+        return camp[0][0]
+    
+    
     def on_toggled_ZIGraf_radio(self,enabled):
         """Aquesta es una funcio auxiliar que controla la visibilitat de diferents 
         elements de la interficie segons la opcio marcada"""
@@ -730,7 +756,7 @@ class ActivitatsEconomiques:
 #       *****************************************************************************************************************
 #       INICI CREACIO DE LA TAULA 'XARXA_GRAF' I PREPARACIO DELS CAMPS COST I REVERSE_COST
 #       *****************************************************************************************************************
-        XarxaCarrers = "SegmentsXarxaCarrers" #self.dlg.comboGraf.currentText()
+        XarxaCarrers = self.dlg.comboGraf.currentText()
         sql_1="DROP TABLE IF EXISTS \"Xarxa_Graf\";\n"
         """ Es fa una copia de la taula que cont� el graf i s'afegeixen els camps cost i reverse_cost en funci� del que es necessiti, es crear� taula local temporal per evitar problemes de concurrencia"""
         sql_1+="CREATE local temporary TABLE \"Xarxa_Graf\" as (SELECT * FROM \"" + XarxaCarrers + "\");\n"
@@ -1582,7 +1608,7 @@ class ActivitatsEconomiques:
 #                       INICI CALCUL DEL GRAF I DEL BUFFER DELS TRAMS CALCULATS 
 #                       *****************************************************************************************************************
                         if (self.dlg.chk_calc_local.isChecked() and self.dlg.ZIGraf_radio.isChecked()):
-                            sql_xarxa="SELECT * FROM \"SegmentsXarxaCarrers\""
+                            sql_xarxa="SELECT * FROM \""+self.dlg.comboGraf.currentText()+"\""
                             buffer_resultat,graf_resultat,buffer_dissolved=self.calcul_graf2(sql_total_graf2,sql_xarxa,uri)
                             vlayer=buffer_resultat['OUTPUT']
                             vlayer_graf=graf_resultat['OUTPUT']
@@ -1793,7 +1819,7 @@ class ActivitatsEconomiques:
         self.bar.clearWidgets()
         self.dlg.Progres.setVisible(False)
         QApplication.processEvents()
-        #self.eliminaTaulesCalcul(Fitxer)
+        self.eliminaTaulesCalcul(Fitxer)
         
     #@pyqtSlot()
     
@@ -1879,6 +1905,7 @@ class ActivitatsEconomiques:
                 cur = conn.cursor()
                 self.cercaDescripcio()
                 self.cercaEpigraf()
+                self.ompleComboGraf()
                 
             except:
                 self.dlg.ComboConn.setCurrentIndex(0)

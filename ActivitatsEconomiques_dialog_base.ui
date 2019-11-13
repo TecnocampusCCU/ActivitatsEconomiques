@@ -27,14 +27,14 @@
   </property>
   <property name="windowIcon">
    <iconset>
-    <normaloff>../../../../.designer/backup/AE.png</normaloff>
-    <normalon>../../../../.designer/backup/AE.png</normalon>
-    <disabledoff>../../../../.designer/backup/AE.png</disabledoff>
-    <disabledon>../../../../.designer/backup/AE.png</disabledon>
-    <activeoff>../../../../.designer/backup/AE.png</activeoff>
-    <activeon>../../../../.designer/backup/AE.png</activeon>
-    <selectedoff>../../../../.designer/backup/AE.png</selectedoff>
-    <selectedon>../../../../.designer/backup/AE.png</selectedon>../../../../.designer/backup/AE.png</iconset>
+    <normaloff>../../../.designer/backup/AE.png</normaloff>
+    <normalon>../../../.designer/backup/AE.png</normalon>
+    <disabledoff>../../../.designer/backup/AE.png</disabledoff>
+    <disabledon>../../../.designer/backup/AE.png</disabledon>
+    <activeoff>../../../.designer/backup/AE.png</activeoff>
+    <activeon>../../../.designer/backup/AE.png</activeon>
+    <selectedoff>../../../.designer/backup/AE.png</selectedoff>
+    <selectedon>../../../.designer/backup/AE.png</selectedon>../../../.designer/backup/AE.png</iconset>
   </property>
   <property name="windowOpacity">
    <double>0.990000000000000</double>
@@ -1550,6 +1550,29 @@ background-color: rgb(255, 255, 255);</string>
          </property>
          <property name="text">
           <string>Local</string>
+         </property>
+        </widget>
+        <widget class="QComboBox" name="comboGraf">
+         <property name="geometry">
+          <rect>
+           <x>230</x>
+           <y>20</y>
+           <width>191</width>
+           <height>22</height>
+          </rect>
+         </property>
+        </widget>
+        <widget class="QLabel" name="grafText">
+         <property name="geometry">
+          <rect>
+           <x>200</x>
+           <y>20</y>
+           <width>31</width>
+           <height>20</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Graf</string>
          </property>
         </widget>
        </widget>
