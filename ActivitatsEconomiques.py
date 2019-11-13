@@ -488,14 +488,20 @@ class ActivitatsEconomiques:
         """Aquesta funcio busca les entitats que servirien com a graf"""
         global schema
         layers=self.getLayers(schema)
+        self.dlg.comboGraf.clear()
+
         #self.populateComboBox(self.dlg.GrafCombo,layers,"Select layer",True)
-        myListLayers = []
+        layersList = []
+        layersList.clear()
+        layersList.append("Selecciona una entitat")
         for layername in layers:
             tipus=self.getGeometryType(layername)
             if tipus in ('ST_LineString','ST_MultiLineString'):
-                myListLayers.append(layername)
+                layersList.append(layername)
         #myListLayers = [layername for layername in layers if self.getGeometryType(layername) in ('ST_LineString','ST_MultiLineString')]
-        self.dlg.comboGraf.addItems( myListLayers )
+        
+        self.dlg.comboGraf.addItems(layersList)
+        
 
     
     def cercaEpigraf(self):
@@ -1434,6 +1440,11 @@ class ActivitatsEconomiques:
         global conn
         global progress
 
+
+        if self.dlg.ZIGraf_radio.isChecked() and self.dlg.comboGraf.currentText() == 'Selecciona una entitat':
+                QMessageBox.information(None, "Error", "No hi ha seleccionada cap capa de xarxa")
+                return
+
         #self.dlg.Progres.setVisible(False)
         Fitxer=datetime.datetime.now().strftime("%Y%m%d%H%M%S%f")
         consoleWidget = iface.mainWindow().findChild( QDockWidget, 'PythonConsole' )
@@ -1451,6 +1462,8 @@ class ActivitatsEconomiques:
         self.dlg.Progres.setVisible(False)
         self.dlg.EstatConnexioFixa.setText('Processant:')
         QApplication.processEvents()
+        
+        
 #       *****************************************************************************************************************
 #       INICI CREACIO DE LES TAULES RESUM DESDE EL CSV SUMINISTRAT 
 #       *****************************************************************************************************************
@@ -1595,7 +1608,7 @@ class ActivitatsEconomiques:
                 else:
                     QMessageBox.information(None, "LAYER ERROR 0:", "%s\n\nThe layer %s is not valid" % ("error","nom_layer"))
 
-                if (self.dlg.topo.isChecked()): #Calcul mitjan�ant numero de policia
+                if (self.dlg.topo.isChecked()): #Calcul mitjançant numero de policia
                     if (self.dlg.ZIGraf_radio.isChecked()):
                         
                         #Calcul mitjan�ant GRAF
@@ -1606,7 +1619,7 @@ class ActivitatsEconomiques:
                         QApplication.processEvents()
 #                       *****************************************************************************************************************
 #                       INICI CALCUL DEL GRAF I DEL BUFFER DELS TRAMS CALCULATS 
-#                       *****************************************************************************************************************
+#                       *****************************************************************************************************************                            
                         if (self.dlg.chk_calc_local.isChecked() and self.dlg.ZIGraf_radio.isChecked()):
                             sql_xarxa="SELECT * FROM \""+self.dlg.comboGraf.currentText()+"\""
                             buffer_resultat,graf_resultat,buffer_dissolved=self.calcul_graf2(sql_total_graf2,sql_xarxa,uri)
@@ -1802,9 +1815,9 @@ class ActivitatsEconomiques:
                 QApplication.processEvents()
 
             else:
-                QMessageBox.information(None, 'Informaci�:', 'No hi ha cap element seleccionat')
+                QMessageBox.information(None, 'Informació:', 'No hi ha cap element seleccionat')
         else:
-            QMessageBox.information(None, 'Informaci�:', 'No est� connectat a cap base de dades')
+            QMessageBox.information(None, 'Informació:', 'No està connectat a cap base de dades')
 
         print ("Durada: "+str(int(time.time()-a))+" s.")
         nom_conn=self.dlg.ComboConn.currentText()
