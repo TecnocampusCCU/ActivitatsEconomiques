@@ -81,7 +81,7 @@ micolor_ZI=None
 micolor_Graf=None
 Fitxer=""
 Path_Inicial=expanduser("~")
-Versio_modul="V_Q3.191113"
+Versio_modul="V_Q3.191119"
 progress=None
 
 class ActivitatsEconomiques:
@@ -681,13 +681,28 @@ class ActivitatsEconomiques:
         del combo o desplegable de la capa de punts,
         automÃ ticament comprova els camps de la taula escollida.
         """
-        capa=self.dlg.comboGraf.currentText()
-        if capa != "":
-            if capa != 'Selecciona una entitat':
-                if (self.grafValid(capa)):
-                    pass
-                else:
-                    QMessageBox.information(None, "Error", 'El graf seleccionat no té la capa de nusos corresponent.\nEscolliu un altre.')
+        try:
+            capa=self.dlg.comboGraf.currentText()
+            if capa != "":
+                if capa != 'Selecciona una entitat':
+                    if (self.grafValid(capa)):
+                        pass
+                    else:
+                        QMessageBox.information(None, "Error", 'El graf seleccionat no té la capa de nusos corresponent.\nEscolliu un altre.')
+        except Exception as ex:
+            print ("Error Graf seleccionat")
+            template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+            message = template.format(type(ex).__name__, ex.args)
+            print (message)
+            QMessageBox.information(None, "Error", "Error Graf seleccionat")
+            conn.rollback()
+            self.eliminaTaulesCalcul(Fitxer)
+            self.bar.clearWidgets()
+            self.dlg.Progres.setValue(0)
+            self.dlg.Progres.setVisible(False)
+            self.dlg.lblEstatConn.setText('Connectat')
+            self.dlg.lblEstatConn.setStyleSheet('border:1px solid #000000; background-color: #7fff7f')
+            return "ERROR"
     
     def grafValid(self, taula):
         """Aquesta funció comprova si la taula que li hem passat té la seva capa de graf corresponent"""
@@ -781,8 +796,23 @@ class ActivitatsEconomiques:
                 """Es suma al camp 'cost' i a 'reverse_cost' el valor dels semafors sempre i quan estigui la opci� marcada"""
                 sql_1+="UPDATE \"Xarxa_Graf\" set \"cost\"=\"cost\"+(\"Cost_Total_Semafor_Tram\"), \"reverse_cost\"=\"reverse_cost\"+(\"Cost_Total_Semafor_Tram\");\n"
         #print sql_1
-        cur.execute(sql_1)
-        conn.commit()
+        try:
+            cur.execute(sql_1)
+            conn.commit()
+        except Exception as ex:
+            print ("Error CREATE Xarxa_Graf")
+            template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+            message = template.format(type(ex).__name__, ex.args)
+            print (message)
+            QMessageBox.information(None, "Error", "Error CREATE Xarxa_Graf")
+            conn.rollback()
+            self.eliminaTaulesCalcul(Fitxer)
+            self.bar.clearWidgets()
+            self.dlg.Progres.setValue(0)
+            self.dlg.Progres.setVisible(False)
+            self.dlg.lblEstatConn.setText('Connectat')
+            self.dlg.lblEstatConn.setStyleSheet('border:1px solid #000000; background-color: #7fff7f')
+            return "ERROR"
 #       *****************************************************************************************************************
 #       FI CREACIO DE LA TAULA 'XARXA_GRAF' I PREPARACIO DELS CAMPS COST I REVERSE_COST
 #       *****************************************************************************************************************
@@ -804,9 +834,23 @@ class ActivitatsEconomiques:
         sql_1+="ALTER TABLE punts_interes_tmp ADD COLUMN     fraction FLOAT;\n"
         sql_1+="ALTER TABLE punts_interes_tmp ADD COLUMN     newPoint geometry;\n"
         #print sql_1
-
-        cur.execute(sql_1)
-        conn.commit()
+        try:
+            cur.execute(sql_1)
+            conn.commit()
+        except Exception as ex:
+            print ("Error CREATE punts_interes_temp")
+            template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+            message = template.format(type(ex).__name__, ex.args)
+            print (message)
+            QMessageBox.information(None, "Error", "Error CREATE punts_interes_tmp")
+            conn.rollback()
+            self.eliminaTaulesCalcul(Fitxer)
+            self.bar.clearWidgets()
+            self.dlg.Progres.setValue(0)
+            self.dlg.Progres.setVisible(False)
+            self.dlg.lblEstatConn.setText('Connectat')
+            self.dlg.lblEstatConn.setStyleSheet('border:1px solid #000000; background-color: #7fff7f')
+            return "ERROR"
 #       *****************************************************************************************************************
 #       FI CREACIO DE LA TAULA 'PUNTS_INTERES_TMP' QUE CONTINDRA ELS PUNTS D'INTERES PROJECTATS SOBRE EL TRAM
 #       *****************************************************************************************************************
@@ -819,8 +863,23 @@ class ActivitatsEconomiques:
         """Es calcula la fraccio del tram que on esta situat la projecci� del punt d'interes"""
         sql_1+="UPDATE \"punts_interes_tmp\" SET fraction = ST_LineLocatePoint(e.the_geom, \"punts_interes_tmp\".the_geom),newPoint = ST_LineInterpolatePoint(e.the_geom, ST_LineLocatePoint(e.the_geom, \"punts_interes_tmp\".the_geom)) FROM \"Xarxa_Graf\" AS e WHERE \"punts_interes_tmp\".\"edge_id\" = e.id;\n"
         #print sql_1
-        cur.execute(sql_1)
-        conn.commit()
+        try:
+            cur.execute(sql_1)
+            conn.commit()
+        except Exception as ex:
+            print ("Error UPDATE punts_interes_temp")
+            template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+            message = template.format(type(ex).__name__, ex.args)
+            print (message)
+            QMessageBox.information(None, "Error", "Error UPDATE punts_interes_tmp")
+            conn.rollback()
+            self.eliminaTaulesCalcul(Fitxer)
+            self.bar.clearWidgets()
+            self.dlg.Progres.setValue(0)
+            self.dlg.Progres.setVisible(False)
+            self.dlg.lblEstatConn.setText('Connectat')
+            self.dlg.lblEstatConn.setStyleSheet('border:1px solid #000000; background-color: #7fff7f')
+            return "ERROR"
 #       *****************************************************************************************************************
 #       FI ASSIGNACIO DEL VALOR DEL TRAM MES PROPER AL CAMP 'EDGE_ID' DE LA TAULA 'PUNTS_INTERES_TMP 
 #       *****************************************************************************************************************
@@ -1003,8 +1062,23 @@ class ActivitatsEconomiques:
             return "ERROR"
             
         sql_1="DROP FUNCTION IF EXISTS Cobertura();\n"
-        cur.execute(sql_1)
-        conn.commit()
+        try:
+            cur.execute(sql_1)
+            conn.commit()
+        except Exception as ex:
+            print ("Error DROP Cobertura")
+            template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+            message = template.format(type(ex).__name__, ex.args)
+            print (message)
+            QMessageBox.information(None, "Error", "Error DROP Cobertura")
+            conn.rollback()
+            self.eliminaTaulesCalcul(Fitxer)
+            self.bar.clearWidgets()
+            self.dlg.Progres.setValue(0)
+            self.dlg.Progres.setVisible(False)
+            self.dlg.lblEstatConn.setText('Connectat')
+            self.dlg.lblEstatConn.setStyleSheet('border:1px solid #000000; background-color: #7fff7f')
+            return "ERROR"
 #       *****************************************************************************************************************
 #       FI FUNCIO PER CREAR ELS TRAMS FINALS AMB LA FRACCIO DE TRAM QUE LI CORRESPON 
 #       *****************************************************************************************************************
@@ -1356,13 +1430,27 @@ class ActivitatsEconomiques:
 #       *****************************************************************************************************************
 #       FI CREACIO TAULA BUFFER_FINAL_(DATA) QUE CONTINDRA EL BUFFER DE LA UNIO DELS TRAMS 
 #       *****************************************************************************************************************
-
-        if not(self.dlg.MostrarGraf_chk.isChecked()):
-            sql_1="drop table if exists Graf_utilitzat_"+Fitxer+";\n"
-            cur.execute(sql_1)
-            conn.commit()
-        sql_total="SELECT * FROM Buffer_Final_"+Fitxer
-        return sql_total
+        try:
+            if not(self.dlg.MostrarGraf_chk.isChecked()):
+                sql_1="drop table if exists Graf_utilitzat_"+Fitxer+";\n"
+                cur.execute(sql_1)
+                conn.commit()
+            sql_total="SELECT * FROM Buffer_Final_"+Fitxer
+            return sql_total
+        except Exception as ex:
+            print ("Error DROP Graf_utilitzat")
+            template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+            message = template.format(type(ex).__name__, ex.args)
+            print (message)
+            QMessageBox.information(None, "Error", "Error DROP Graf_utilitzat")
+            conn.rollback()
+            self.eliminaTaulesCalcul(Fitxer)
+            self.bar.clearWidgets()
+            self.dlg.Progres.setValue(0)
+            self.dlg.Progres.setVisible(False)
+            self.dlg.lblEstatConn.setText('Connectat')
+            self.dlg.lblEstatConn.setStyleSheet('border:1px solid #000000; background-color: #7fff7f')
+            return "ERROR"
 
     
     def calcul_graf2(self,sql_punts,sql_xarxa,uri2):
