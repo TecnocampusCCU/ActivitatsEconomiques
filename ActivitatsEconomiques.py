@@ -27,7 +27,7 @@ import processing
 from os.path import expanduser
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
-from PyQt5.QtWidgets import QAction,QMessageBox,QTableWidgetItem, QApplication,QSizePolicy,QGridLayout,QDialogButtonBox,QFileDialog,QDockWidget,QProgressBar,QColorDialog
+from PyQt5.QtWidgets import QAction,QMessageBox,QTableWidgetItem, QApplication,QSizePolicy,QGridLayout,QDialogButtonBox,QFileDialog,QDockWidget,QProgressBar,QColorDialog,QToolBar
 from qgis.core import QgsMapLayer
 from qgis.core import QgsDataSourceUri
 from qgis.core import QgsVectorLayer
@@ -81,7 +81,7 @@ micolor_ZI=None
 micolor_Graf=None
 Fitxer=""
 Path_Inicial=expanduser("~")
-Versio_modul="V_Q3.191119"
+Versio_modul="V_Q3.200108"
 progress=None
 
 class ActivitatsEconomiques:
@@ -139,8 +139,16 @@ class ActivitatsEconomiques:
         self.actions = []
         self.menu = self.tr('&CCU')
         # TODO: We are going to let the user set this up in a future iteration
-        self.toolbar = self.iface.addToolBar('CCU')
-        self.toolbar.setObjectName('Activitats Economiques')
+        #self.toolbar = self.iface.addToolBar('CCU')
+        #self.toolbar.setObjectName('Activitats Economiques')
+        trobat=False
+        for x in iface.mainWindow().findChildren(QToolBar,'CCU'): 
+            self.toolbar = x
+            trobat=True
+        
+        if not trobat:
+            self.toolbar = self.iface.addToolBar('CCU')
+            self.toolbar.setObjectName('CCU')
 
         self.bar = QgsMessageBar()
         self.bar.setSizePolicy( QSizePolicy.Minimum, QSizePolicy.Fixed )
@@ -314,9 +322,10 @@ class ActivitatsEconomiques:
             self.iface.removePluginMenu(
                 self.tr('&Activitats Economiques'),
                 action)
-            self.iface.removeToolBarIcon(action)
+            #self.iface.removeToolBarIcon(action)
+            self.toolbar.removeAction(action)
         # remove the toolbar
-        del self.toolbar
+        #del self.toolbar
 
     def populateComboBox(self,combo,list,predef,sort):
         """Aquesta funcio omple les pestanyes desplegables amb els paramtres que li passem per parametres"""
