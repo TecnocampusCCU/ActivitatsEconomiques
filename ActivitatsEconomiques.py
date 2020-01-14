@@ -81,7 +81,7 @@ micolor_ZI=None
 micolor_Graf=None
 Fitxer=""
 Path_Inicial=expanduser("~")
-Versio_modul="V_Q3.200108"
+Versio_modul="V_Q3.200114"
 progress=None
 
 class ActivitatsEconomiques:
@@ -320,7 +320,7 @@ class ActivitatsEconomiques:
         """Removes the plugin menu item and icon from QGIS GUI."""
         for action in self.actions:
             self.iface.removePluginMenu(
-                self.tr('&Activitats Economiques'),
+                self.tr('&CCU'),
                 action)
             #self.iface.removeToolBarIcon(action)
             self.toolbar.removeAction(action)

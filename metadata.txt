@@ -10,7 +10,7 @@
 name=ActivitatsEconomiques
 qgisMinimumVersion=3.0
 description=ActivitatsEconomiques
-version=Q3.200108
+version=Q3.200114
 author=CCU
 email=jlopez@tecnocampus.cat
 
