@@ -1663,7 +1663,6 @@ class ActivitatsEconomiques:
                     sql_total="select TOT.\"UTM\" AS \"ogc_fid\",TOT.\"numae\",TOT.\"geom\" as the_geom from ("+sql+") TOT"
                     
                 uri = QgsDataSourceUri()
-                print (sql_total)
                 try:
                     uri.setConnection(host1,port1,nomBD1,usuari1,contra1)
                     print ("Connectat")
