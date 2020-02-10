@@ -81,7 +81,7 @@ micolor_ZI=None
 micolor_Graf=None
 Fitxer=""
 Path_Inicial=expanduser("~")
-Versio_modul="V_Q3.200114"
+Versio_modul="V_Q3.200210"
 progress=None
 
 class ActivitatsEconomiques:
@@ -493,12 +493,11 @@ class ActivitatsEconomiques:
         return var;
             
         
-    def ompleComboGraf(self):
+    def ompleComboGraf(self, layersList):
         """Aquesta funcio busca les entitats que servirien com a graf"""
-        global schema
-        layers=self.getLayers(schema)
+        #layers=self.getLayers(schema)
         self.dlg.comboGraf.clear()
-
+        '''
         #self.populateComboBox(self.dlg.GrafCombo,layers,"Select layer",True)
         layersList = []
         layersList.clear()
@@ -508,6 +507,7 @@ class ActivitatsEconomiques:
             if tipus in ('ST_LineString','ST_MultiLineString'):
                 layersList.append(layername)
         #myListLayers = [layername for layername in layers if self.getGeometryType(layername) in ('ST_LineString','ST_MultiLineString')]
+        '''
         
         self.dlg.comboGraf.addItems(layersList)
         
@@ -1663,7 +1663,7 @@ class ActivitatsEconomiques:
                     sql_total="select TOT.\"UTM\" AS \"ogc_fid\",TOT.\"numae\",TOT.\"geom\" as the_geom from ("+sql+") TOT"
                     
                 uri = QgsDataSourceUri()
-                #print sql_total
+                print (sql_total)
                 try:
                     uri.setConnection(host1,port1,nomBD1,usuari1,contra1)
                     print ("Connectat")
@@ -2015,15 +2015,23 @@ class ActivitatsEconomiques:
                 cur = conn.cursor()
                 self.cercaDescripcio()
                 self.cercaEpigraf()
-                self.ompleComboGraf()
+                sql = "select f_table_name from geometry_columns where ((type = 'MULTILINESTRING' or type = 'LINESTRING') and f_table_schema ='public') order by 1"
+                cur.execute(sql)
+                layersList= cur.fetchall()
+                self.ompleComboGraf(layersList[0])
                 
-            except:
-                self.dlg.ComboConn.setCurrentIndex(0)
-                self.dlg.EstatConnexio.setStyleSheet('border:1px solid #000000; background-color: #ff7f7f')
-                self.dlg.EstatConnexio.setText('Error: Problema en la connexió.')
-
+           
+            except Exception as ex:
                 print ("I am unable to connect to the database")
-            
+                template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+                message = template.format(type(ex).__name__, ex.args)
+                print (message)
+                QMessageBox.information(None, "Error", "Error canvi connexió")
+                conn.rollback()
+                self.dlg.ComboConn.setCurrentIndex(0)
+                self.dlg.lblEstatConn.setStyleSheet('border:1px solid #000000; background-color: #ff7f7f')
+                self.dlg.EstatConnexio.setText('Error: Problema en la connexió.')
+                return
         else:
             self.dlg.EstatConnexio.setText('No connectat')
             self.dlg.EstatConnexio.setStyleSheet('border:1px solid #000000; background-color: #FFFFFF')
