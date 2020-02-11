@@ -81,7 +81,7 @@ micolor_ZI=None
 micolor_Graf=None
 Fitxer=""
 Path_Inicial=expanduser("~")
-Versio_modul="V_Q3.200210"
+Versio_modul="V_Q3.200211"
 progress=None
 
 class ActivitatsEconomiques:
@@ -493,26 +493,7 @@ class ActivitatsEconomiques:
         return var;
             
         
-    def ompleComboGraf(self, layersList):
-        """Aquesta funcio busca les entitats que servirien com a graf"""
-        #layers=self.getLayers(schema)
-        self.dlg.comboGraf.clear()
-        '''
-        #self.populateComboBox(self.dlg.GrafCombo,layers,"Select layer",True)
-        layersList = []
-        layersList.clear()
-        layersList.append("Selecciona una entitat")
-        for layername in layers:
-            tipus=self.getGeometryType(layername)
-            if tipus in ('ST_LineString','ST_MultiLineString'):
-                layersList.append(layername)
-        #myListLayers = [layername for layername in layers if self.getGeometryType(layername) in ('ST_LineString','ST_MultiLineString')]
-        '''
-        
-        self.dlg.comboGraf.addItems(layersList)
-        
 
-    
     def cercaEpigraf(self):
         """Aquesta funcio cerca els epigrafs que continguin la paraula clau que li passem"""
         global nomBD1
@@ -1650,14 +1631,14 @@ class ActivitatsEconomiques:
                 where_sentence=where_sentence[:-1]+")"
                 #print where_sentence
                 if (self.dlg.topo.isChecked()):
-                    sql="SELECT BC.\"id\",BC.\"Nom\",BC.\"EPIGRAFIAE\",DI.\"Carrer_Num_Bis\",DI.\"REF_CADAST\",DI.\"geom\",BC.\"NumPol\",BC.\"METRES2\",("+self.dlg.texte_2.text()+"*SQRT(BC.\"METRES2\"/ PI())) AS RADI FROM (select * from \"BrossaComercial\" "
+                    sql="SELECT BC.\"id\",BC.\"FULLNAME\" AS \"Empresa\",BC.\"EPIGRAFIAE\",DI.\"Carrer_Num_Bis\",DI.\"REF_CADAST\",DI.\"geom\",BC.\"NumPol\",BC.\"METRES2\",("+self.dlg.texte_2.text()+"*SQRT(BC.\"METRES2\"/ PI())) AS RADI FROM (select * from \"BrossaComercial\" "
                     wheresql="where \"EPIGRAFIAE\" in "+where_sentence+") BC LEFT JOIN \"dintreilla\" DI ON (BC.\"NumPol\" = DI.\"Carrer_Num_Bis\")"
                     if (self.dlg.Mostra_punt_chk.isChecked()):
-                        sql_total="select TOT.\"EPIGRAFIAE\", TOT.\"Nom\",TOT.\"Carrer_Num_Bis\",TOT.\"REF_CADAST\",TOT.\"NumPol\",TOT.\"METRES2\",TOT.\"radi\",TOT.\"id\" AS \"ogc_fid\",TOT.\"geom\" AS the_geom from ("+sql+wheresql+") TOT"
+                        sql_total="select TOT.\"EPIGRAFIAE\", TOT.\"Empresa\",TOT.\"Carrer_Num_Bis\",TOT.\"REF_CADAST\",TOT.\"NumPol\",TOT.\"METRES2\",TOT.\"radi\",TOT.\"id\" AS \"ogc_fid\",TOT.\"geom\" AS the_geom from ("+sql+wheresql+") TOT"
                     else:
-                        sql_total="select TOT.\"EPIGRAFIAE\", TOT.\"Nom\",TOT.\"Carrer_Num_Bis\",TOT.\"REF_CADAST\",TOT.\"NumPol\",TOT.\"METRES2\",TOT.\"radi\",TOT.\"id\" AS \"ogc_fid\",ST_Buffer(TOT.\"geom\",TOT.\"radi\"::double precision) AS the_geom from ("+sql+wheresql+") TOT"
+                        sql_total="select TOT.\"EPIGRAFIAE\", TOT.\"Empresa\",TOT.\"Carrer_Num_Bis\",TOT.\"REF_CADAST\",TOT.\"NumPol\",TOT.\"METRES2\",TOT.\"radi\",TOT.\"id\" AS \"ogc_fid\",ST_Buffer(TOT.\"geom\",TOT.\"radi\"::double precision) AS the_geom from ("+sql+wheresql+") TOT"
                     
-                    sql_total_graf2="select TOT.\"EPIGRAFIAE\", TOT.\"Nom\",TOT.\"Carrer_Num_Bis\",TOT.\"REF_CADAST\",TOT.\"NumPol\",TOT.\"METRES2\",TOT.\"radi\",TOT.\"id\" AS \"id\",TOT.\"geom\" AS geom from ("+sql+wheresql+") TOT"
+                    sql_total_graf2="select TOT.\"EPIGRAFIAE\", TOT.\"Empresa\",TOT.\"Carrer_Num_Bis\",TOT.\"REF_CADAST\",TOT.\"NumPol\",TOT.\"METRES2\",TOT.\"radi\",TOT.\"id\" AS \"id\",TOT.\"geom\" AS geom from ("+sql+wheresql+") TOT"
                 else:
                     sql="SELECT PA.\"geom\",PACOUNT.\"numae\",PA.\"UTM\" FROM (SELECT count(BC.\"EPIGRAFIAE\") as numAE , PA.\"UTM\" FROM (select * from \"BrossaComercial\" where \"EPIGRAFIAE\" in "+where_sentence+") BC LEFT JOIN \"parcel\" PA ON (BC.\"CADASREF\" = PA.\"UTM\") WHERE (PA.\"UTM\" IS NOT NULL) AND (PA.\"UTM\"<>' ')  GROUP BY PA.\"UTM\") PACOUNT LEFT JOIN \"parcel\" PA ON (PACOUNT.\"UTM\"=PA.\"UTM\") WHERE (PACOUNT.\"numae\">0) "
                     sql_total="select TOT.\"UTM\" AS \"ogc_fid\",TOT.\"numae\",TOT.\"geom\" as the_geom from ("+sql+") TOT"
@@ -1737,7 +1718,14 @@ class ActivitatsEconomiques:
                         else:
                             sql_buffer=self.calcul_graf(sql_total)
                             if sql_buffer=="ERROR":
-                                return                            
+                                return         
+                            sql_activitat = "ALTER TABLE \"buffer_final_"+Fitxer+"\" ADD \"Empresa\" varchar;"
+                            cur.execute(sql_activitat)
+                            conn.commit()
+                            
+                            sql_activitat = 'UPDATE \"buffer_final_'+Fitxer+'\" SET \"Empresa\" = (SELECT \"FULLNAME\" FROM \"BrossaComercial\" WHERE \"buffer_final_'+Fitxer+'\".\"punt_id\" = \"BrossaComercial\".\"id\");'
+                            cur.execute(sql_activitat)
+                            conn.commit()                   
 #                       *****************************************************************************************************************
 #                       FI CALCUL DEL GRAF I DEL BUFFER DELS TRAMS CALCULATS 
 #                       *****************************************************************************************************************
@@ -1754,9 +1742,9 @@ class ActivitatsEconomiques:
                     else:
                         
                         #Calcul mitjan�ant Zona Circular
-                        sql="SELECT BC.\"EPIGRAFIAE\",BC.\"Nom\",DI.\"Carrer_Num_Bis\",DI.\"REF_CADAST\",DI.\"geom\",BC.\"NumPol\",BC.\"METRES2\",("+self.dlg.texte_2.text()+"*SQRT(BC.\"METRES2\"/ PI())) AS RADI FROM (select * from \"BrossaComercial\" "
+                        sql="SELECT BC.\"EPIGRAFIAE\",BC.\"FULLNAME\" AS \"Empresa\",DI.\"Carrer_Num_Bis\",DI.\"REF_CADAST\",DI.\"geom\",BC.\"NumPol\",BC.\"METRES2\",("+self.dlg.texte_2.text()+"*SQRT(BC.\"METRES2\"/ PI())) AS RADI FROM (select * from \"BrossaComercial\" "
                         wheresql="where \"EPIGRAFIAE\" in "+where_sentence+") BC LEFT JOIN \"dintreilla\" DI ON (BC.\"NumPol\" = DI.\"Carrer_Num_Bis\")"
-                        sql_ZI="select TOT.\"EPIGRAFIAE\",TOT.\"Carrer_Num_Bis\",TOT.\"REF_CADAST\",TOT.\"NumPol\",TOT.\"METRES2\",TOT.\"radi\",row_number() OVER () AS \"ogc_fid\",ST_Buffer(TOT.\"geom\","+self.dlg.Radi_ZI.text()+"::double precision) AS the_geom from ("+sql+wheresql+") TOT"
+                        sql_ZI="select TOT.\"EPIGRAFIAE\", TOT.\"Empresa\", TOT.\"Carrer_Num_Bis\",TOT.\"REF_CADAST\",TOT.\"NumPol\",TOT.\"METRES2\",TOT.\"radi\",row_number() OVER () AS \"ogc_fid\",ST_Buffer(TOT.\"geom\","+self.dlg.Radi_ZI.text()+"::double precision) AS the_geom from ("+sql+wheresql+") TOT"
                         sql_PART1_ZI="SELECT row_number() OVER () AS \"ogc_fid\",ILL.\"D_S_I\",ILL.\"geom\",RS.\"Habitants\" FROM (select \"ILLES\".\"D_S_I\",\"ILLES\".\"geom\" from \"ILLES\" where \"ILLES\".\"id\" NOT IN (select \"ILLES\".\"id\" from \"ILLES\" INNER JOIN ("
                         sql_TOTAL_ZI=sql_PART1_ZI+sql_ZI+") TOT2 on ST_Intersects(\"ILLES\".\"geom\",TOT2.\"the_geom\"))) ILL JOIN \"Resum_Temp_"+Fitxer+"\" RS on (ILL.\"D_S_I\" = RS.\"ILLES_Codificades\")"
                 else:
@@ -1764,7 +1752,7 @@ class ActivitatsEconomiques:
                     #Calcul mitjançant parceles
                
                     sql="SELECT PA.\"geom\",PACOUNT.\"numae\",PA.\"UTM\" FROM (SELECT count(BC.\"EPIGRAFIAE\") as numAE , PA.\"UTM\" FROM (select * from \"BrossaComercial\" where \"EPIGRAFIAE\" in "+where_sentence+") BC LEFT JOIN \"parcel\" PA ON (BC.\"CADASREF\" = PA.\"UTM\") WHERE (PA.\"UTM\" IS NOT NULL) AND (PA.\"UTM\"<>' ')  GROUP BY PA.\"UTM\") PACOUNT LEFT JOIN \"parcel\" PA ON (PACOUNT.\"UTM\"=PA.\"UTM\") WHERE (PACOUNT.\"numae\">0) "
-                    sql_ZI="select TOT.\"UTM\",TOT.\"numae\",row_number() OVER () AS \"ogc_fid\",ST_Buffer(TOT.\"geom\","+self.dlg.Radi_ZI.text()+"::double precision) as the_geom from ("+sql+") TOT"
+                    sql_ZI="select TOT.\"UTM\", TOT.\"Empresa\" ,TOT.\"numae\",row_number() OVER () AS \"ogc_fid\",ST_Buffer(TOT.\"geom\","+self.dlg.Radi_ZI.text()+"::double precision) as the_geom from ("+sql+") TOT"
                     sql_PART1_ZI="SELECT ILL.\"D_S_I\",ILL.\"geom\",RS.\"Habitants\" FROM (select \"ILLES\".\"D_S_I\",\"ILLES\".\"geom\" from \"ILLES\" where \"ILLES\".\"id\" NOT IN (select \"ILLES\".\"id\" from \"ILLES\" INNER JOIN ("
                     sql_TOTAL_ZI=sql_PART1_ZI+sql_ZI+") TOT2 on ST_Intersects(\"ILLES\".\"geom\",TOT2.\"the_geom\"))) ILL JOIN \"Resum_Temp_"+Fitxer+"\" RS on (ILL.\"D_S_I\" = RS.\"ILLES_Codificades\")"
                 
@@ -1828,12 +1816,12 @@ class ActivitatsEconomiques:
                                 if (self.dlg.chk_calc_local.isChecked() and self.dlg.ZIGraf_radio.isChecked()):
                                     sql_total1="SELECT * FROM Buffer_Final_"+Fitxer
                                 else:
-                                    sql_total1="SELECT row_number() OVER () AS \"ogc_fid\",\"punt_id\",\"the_geom\" FROM Buffer_Final_"+Fitxer
+                                    sql_total1="SELECT row_number() OVER () AS \"ogc_fid\",\"punt_id\",\"the_geom\", \"Empresa\" FROM Buffer_Final_"+Fitxer
                                 
                             else:
-                                sql1="SELECT BC.\"EPIGRAFIAE\",BC.\"Nom\", DI.\"Carrer_Num_Bis\",DI.\"REF_CADAST\",DI.\"geom\",BC.\"NumPol\",BC.\"METRES2\",("+self.dlg.texte_2.text()+"*SQRT(BC.\"METRES2\"/ PI())) AS RADI FROM (select * from \"BrossaComercial\" "
+                                sql1="SELECT BC.\"EPIGRAFIAE\",BC.\"FULLNAME\" AS \"Empresa\", DI.\"Carrer_Num_Bis\",DI.\"REF_CADAST\",DI.\"geom\",BC.\"NumPol\",BC.\"METRES2\",("+self.dlg.texte_2.text()+"*SQRT(BC.\"METRES2\"/ PI())) AS RADI FROM (select * from \"BrossaComercial\" "
                                 wheresql1="where \"EPIGRAFIAE\" in "+where_sentence+") BC LEFT JOIN \"dintreilla\" DI ON (BC.\"NumPol\" = DI.\"Carrer_Num_Bis\")"
-                                sql_total1="select TOT.\"EPIGRAFIAE\",TOT.\"Nom\", TOT.\"Carrer_Num_Bis\",TOT.\"REF_CADAST\",TOT.\"NumPol\",TOT.\"METRES2\",TOT.\"radi\",row_number() OVER () AS \"ogc_fid\",ST_Buffer(TOT.\"geom\","+self.dlg.Radi_ZI.text()+"::double precision) AS the_geom from ("+sql+wheresql+") TOT"
+                                sql_total1="select TOT.\"EPIGRAFIAE\",TOT.\"Empresa\", TOT.\"Carrer_Num_Bis\",TOT.\"REF_CADAST\",TOT.\"NumPol\",TOT.\"METRES2\",TOT.\"radi\",row_number() OVER () AS \"ogc_fid\",ST_Buffer(TOT.\"geom\","+self.dlg.Radi_ZI.text()+"::double precision) AS the_geom from ("+sql+wheresql+") TOT"
                         else:
                             sql="SELECT PA.\"geom\",PACOUNT.\"numae\",PA.\"UTM\" FROM (SELECT count(BC.\"EPIGRAFIAE\") as numAE , PA.\"UTM\" FROM (select * from \"BrossaComercial\" where \"EPIGRAFIAE\" in "+where_sentence+") BC LEFT JOIN \"parcel\" PA ON (BC.\"CADASREF\" = PA.\"UTM\") WHERE (PA.\"UTM\" IS NOT NULL) AND (PA.\"UTM\"<>' ')  GROUP BY PA.\"UTM\") PACOUNT LEFT JOIN \"parcel\" PA ON (PACOUNT.\"UTM\"=PA.\"UTM\") WHERE (PACOUNT.\"numae\">0) "
                             sql_total1="select TOT.\"UTM\" as \"ogc_fid\",TOT.\"numae\",ST_Buffer(TOT.\"geom\","+self.dlg.Radi_ZI.text()+"::double precision) as the_geom from ("+sql+") TOT"
@@ -2018,7 +2006,7 @@ class ActivitatsEconomiques:
                 sql = "select f_table_name from geometry_columns where ((type = 'MULTILINESTRING' or type = 'LINESTRING') and f_table_schema ='public') order by 1"
                 cur.execute(sql)
                 layersList= cur.fetchall()
-                self.ompleComboGraf(layersList[0])
+                self.ompleCombos(self.dlg.comboGraf, layersList, 'Selecciona una entitat', True)
                 
            
             except Exception as ex:
@@ -2037,6 +2025,32 @@ class ActivitatsEconomiques:
             self.dlg.EstatConnexio.setStyleSheet('border:1px solid #000000; background-color: #FFFFFF')
             self.dlg.ListaActivitatsDesc.clear()
             self.dlg.ListaActivitatsEpigraf.clear()
+
+    def ompleCombos(self, combo, llista, predef, sort):
+            """Aquesta funció omple els combos que li passem per paràmetres"""
+            combo.blockSignals (True)
+            combo.clear()
+            model=QStandardItemModel(combo)
+            predefInList = None
+            for elem in llista:
+                try:
+                    if isinstance(elem, tuple):
+                        item = QStandardItem(unicode(elem[0]))
+                    else:
+                        item = QStandardItem(str(elem))
+                except TypeError:
+                    item = QStandardItem(str(elem[0]))
+                model.appendRow(item)
+                if elem == predef:
+                    predefInList = elem
+            combo.setModel(model)
+            if predef != "":
+                if predefInList:
+                    combo.setCurrentIndex(combo.findText(predefInList))
+                else:
+                    combo.insertItem(0,predef)
+                    combo.setCurrentIndex(0)
+            combo.blockSignals (False)
 
     def run(self):
         """Aquesta funcio executa el plugin"""
