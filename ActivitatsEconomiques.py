@@ -81,7 +81,7 @@ micolor_ZI=None
 micolor_Graf=None
 Fitxer=""
 Path_Inicial=expanduser("~")
-Versio_modul="V_Q3.200211"
+Versio_modul="V_Q3.200214"
 progress=None
 
 class ActivitatsEconomiques:
@@ -482,6 +482,7 @@ class ActivitatsEconomiques:
             missatgeError="Error en CercaDescripcio"
             print (missatgeError)
             QMessageBox.information(None, "Error", missatgeError)
+            self.dlg.setEnabled(True)
             return
         
         rows = cur.fetchall()
@@ -692,6 +693,7 @@ class ActivitatsEconomiques:
             self.dlg.Progres.setVisible(False)
             self.dlg.lblEstatConn.setText('Connectat')
             self.dlg.lblEstatConn.setStyleSheet('border:1px solid #000000; background-color: #7fff7f')
+            self.dlg.setEnabled(True)
             return "ERROR"
     
     def grafValid(self, taula):
@@ -802,6 +804,7 @@ class ActivitatsEconomiques:
             self.dlg.Progres.setVisible(False)
             self.dlg.lblEstatConn.setText('Connectat')
             self.dlg.lblEstatConn.setStyleSheet('border:1px solid #000000; background-color: #7fff7f')
+            self.dlg.setEnabled(True)
             return "ERROR"
 #       *****************************************************************************************************************
 #       FI CREACIO DE LA TAULA 'XARXA_GRAF' I PREPARACIO DELS CAMPS COST I REVERSE_COST
@@ -840,6 +843,7 @@ class ActivitatsEconomiques:
             self.dlg.Progres.setVisible(False)
             self.dlg.lblEstatConn.setText('Connectat')
             self.dlg.lblEstatConn.setStyleSheet('border:1px solid #000000; background-color: #7fff7f')
+            self.dlg.setEnabled(True)
             return "ERROR"
 #       *****************************************************************************************************************
 #       FI CREACIO DE LA TAULA 'PUNTS_INTERES_TMP' QUE CONTINDRA ELS PUNTS D'INTERES PROJECTATS SOBRE EL TRAM
@@ -869,6 +873,7 @@ class ActivitatsEconomiques:
             self.dlg.Progres.setVisible(False)
             self.dlg.lblEstatConn.setText('Connectat')
             self.dlg.lblEstatConn.setStyleSheet('border:1px solid #000000; background-color: #7fff7f')
+            self.dlg.setEnabled(True)
             return "ERROR"
 #       *****************************************************************************************************************
 #       FI ASSIGNACIO DEL VALOR DEL TRAM MES PROPER AL CAMP 'EDGE_ID' DE LA TAULA 'PUNTS_INTERES_TMP 
@@ -904,6 +909,7 @@ class ActivitatsEconomiques:
             self.dlg.Progres.setVisible(False)
             self.dlg.lblEstatConn.setText('Connectat')
             self.dlg.lblEstatConn.setStyleSheet('border:1px solid #000000; background-color: #7fff7f')
+            self.dlg.setEnabled(True)
             return "ERROR"
 
 #       *****************************************************************************************************************
@@ -937,6 +943,7 @@ class ActivitatsEconomiques:
             self.dlg.Progres.setVisible(False)
             self.dlg.lblEstatConn.setText('Connectat')
             self.dlg.lblEstatConn.setStyleSheet('border:1px solid #000000; background-color: #7fff7f')
+            self.dlg.setEnabled(True)
                             
             return "ERROR"
 #       *****************************************************************************************************************
@@ -983,6 +990,7 @@ class ActivitatsEconomiques:
             self.dlg.Progres.setVisible(False)
             self.dlg.lblEstatConn.setText('Connectat')
             self.dlg.lblEstatConn.setStyleSheet('border:1px solid #000000; background-color: #7fff7f')
+            self.dlg.setEnabled(True)
                             
             return "ERROR"        
 #       *****************************************************************************************************************
@@ -1048,6 +1056,7 @@ class ActivitatsEconomiques:
             self.dlg.Progres.setVisible(False)
             self.dlg.lblEstatConn.setText('Connectat')
             self.dlg.lblEstatConn.setStyleSheet('border:1px solid #000000; background-color: #7fff7f')
+            self.dlg.setEnabled(True)
                             
             return "ERROR"
             
@@ -1068,6 +1077,7 @@ class ActivitatsEconomiques:
             self.dlg.Progres.setVisible(False)
             self.dlg.lblEstatConn.setText('Connectat')
             self.dlg.lblEstatConn.setStyleSheet('border:1px solid #000000; background-color: #7fff7f')
+            self.dlg.setEnabled(True)
             return "ERROR"
 #       *****************************************************************************************************************
 #       FI FUNCIO PER CREAR ELS TRAMS FINALS AMB LA FRACCIO DE TRAM QUE LI CORRESPON 
@@ -1097,6 +1107,7 @@ class ActivitatsEconomiques:
             self.dlg.Progres.setVisible(False)
             self.dlg.lblEstatConn.setText('Connectat')
             self.dlg.lblEstatConn.setStyleSheet('border:1px solid #000000; background-color: #7fff7f')
+            self.dlg.setEnabled(True)
                             
             return "ERROR"        
 #       *****************************************************************************************************************
@@ -1128,6 +1139,7 @@ class ActivitatsEconomiques:
             self.dlg.Progres.setVisible(False)
             self.dlg.lblEstatConn.setText('Connectat')
             self.dlg.lblEstatConn.setStyleSheet('border:1px solid #000000; background-color: #7fff7f')
+            self.dlg.setEnabled(True)
                             
             return "ERROR"        
 
@@ -1180,6 +1192,7 @@ class ActivitatsEconomiques:
             self.dlg.Progres.setVisible(False)
             self.dlg.lblEstatConn.setText('Connectat')
             self.dlg.lblEstatConn.setStyleSheet('border:1px solid #000000; background-color: #7fff7f')
+            self.dlg.setEnabled(True)
                             
             return "ERROR"        
 
@@ -1228,6 +1241,7 @@ class ActivitatsEconomiques:
             self.dlg.Progres.setVisible(False)
             self.dlg.lblEstatConn.setText('Connectat')
             self.dlg.lblEstatConn.setStyleSheet('border:1px solid #000000; background-color: #7fff7f')
+            self.dlg.setEnabled(True)
                             
             return "ERROR"        
 #       *****************************************************************************************************************
@@ -1259,6 +1273,7 @@ class ActivitatsEconomiques:
             self.dlg.Progres.setVisible(False)
             self.dlg.lblEstatConn.setText('Connectat')
             self.dlg.lblEstatConn.setStyleSheet('border:1px solid #000000; background-color: #7fff7f')
+            self.dlg.setEnabled(True)
                             
             return "ERROR"        
 #       *****************************************************************************************************************
@@ -1319,6 +1334,7 @@ class ActivitatsEconomiques:
             self.dlg.Progres.setVisible(False)
             self.dlg.lblEstatConn.setText('Connectat')
             self.dlg.lblEstatConn.setStyleSheet('border:1px solid #000000; background-color: #7fff7f')
+            self.dlg.setEnabled(True)
                             
             return "ERROR"        
 #       *****************************************************************************************************************
@@ -1353,6 +1369,7 @@ class ActivitatsEconomiques:
             self.dlg.Progres.setVisible(False)
             self.dlg.lblEstatConn.setText('Connectat')
             self.dlg.lblEstatConn.setStyleSheet('border:1px solid #000000; background-color: #7fff7f')
+            self.dlg.setEnabled(True)
                             
             return "ERROR"        
 #       *****************************************************************************************************************
@@ -1384,6 +1401,7 @@ class ActivitatsEconomiques:
             self.dlg.Progres.setVisible(False)
             self.dlg.lblEstatConn.setText('Connectat')
             self.dlg.lblEstatConn.setStyleSheet('border:1px solid #000000; background-color: #7fff7f')
+            self.dlg.setEnabled(True)
                             
             return "ERROR"  
 #       *****************************************************************************************************************
@@ -1415,6 +1433,7 @@ class ActivitatsEconomiques:
             self.dlg.Progres.setVisible(False)
             self.dlg.lblEstatConn.setText('Connectat')
             self.dlg.lblEstatConn.setStyleSheet('border:1px solid #000000; background-color: #7fff7f')
+            self.dlg.setEnabled(True)
                             
             return "ERROR"
 #       *****************************************************************************************************************
@@ -1440,6 +1459,7 @@ class ActivitatsEconomiques:
             self.dlg.Progres.setVisible(False)
             self.dlg.lblEstatConn.setText('Connectat')
             self.dlg.lblEstatConn.setStyleSheet('border:1px solid #000000; background-color: #7fff7f')
+            self.dlg.setEnabled(True)
             return "ERROR"
 
     
@@ -1519,8 +1539,10 @@ class ActivitatsEconomiques:
         global progress
 
 
+        self.dlg.setEnabled(False)
         if self.dlg.ZIGraf_radio.isChecked() and self.dlg.comboGraf.currentText() == 'Selecciona una entitat':
                 QMessageBox.information(None, "Error", "No hi ha seleccionada cap capa de xarxa")
+                self.dlg.setEnabled(True)
                 return
 
         #self.dlg.Progres.setVisible(False)
@@ -1577,6 +1599,7 @@ class ActivitatsEconomiques:
                             QMessageBox.information(None, "Error", "DROP TABLE ERROR LayerExportat")
                             conn.rollback()
                             self.eliminaTaulesCalcul(Fitxer)
+                            self.dlg.setEnabled(True)
                             return
                         
                         arxiu.close()
@@ -1613,6 +1636,7 @@ class ActivitatsEconomiques:
         else:
             fesCalcul = True
         if not(fesCalcul):
+            self.dlg.setEnabled(True)
             return
             
         if (self.dlg.EstatConnexio.text()=='Connectat'): 
@@ -1657,6 +1681,7 @@ class ActivitatsEconomiques:
                             QMessageBox.information(None, "Error", "Error a la connexió")
                             conn.rollback()
                             self.eliminaTaulesCalcul(Fitxer)
+                            self.dlg.setEnabled(True)
                             return
                 uri.setDataSource("","("+sql_total+")","the_geom","","ogc_fid")
                 titol=self.dlg.texte_3.text().replace("'","\'")
@@ -1718,6 +1743,7 @@ class ActivitatsEconomiques:
                         else:
                             sql_buffer=self.calcul_graf(sql_total)
                             if sql_buffer=="ERROR":
+                                self.dlg.setEnabled(True)
                                 return         
                             sql_activitat = "ALTER TABLE \"buffer_final_"+Fitxer+"\" ADD \"Nom\" varchar, ADD \"EPIGRAFIAE\" varchar, ADD \"NumPol\" varchar, ADD \"METRES2\" float8, ADD \"REF_CADAST\" varchar;"
                             cur.execute(sql_activitat)
@@ -1920,7 +1946,7 @@ class ActivitatsEconomiques:
         self.dlg.Progres.setVisible(False)
         QApplication.processEvents()
         self.eliminaTaulesCalcul(Fitxer)
-        
+        self.dlg.setEnabled(True)
     #@pyqtSlot()
     
     def eliminaTaulesCalcul(self,Fitxer):
@@ -1943,6 +1969,7 @@ class ActivitatsEconomiques:
             self.dlg.Progres.setVisible(False)
             self.dlg.lblEstatConn.setText('Connectat')
             self.dlg.lblEstatConn.setStyleSheet('border:1px solid #000000; background-color: #7fff7f')
+            self.dlg.setEnabled(True)
             
     def on_click_Sortir(self):
         """Aquesta funcio tanca el plugin"""
@@ -2021,6 +2048,7 @@ class ActivitatsEconomiques:
                 self.dlg.ComboConn.setCurrentIndex(0)
                 self.dlg.lblEstatConn.setStyleSheet('border:1px solid #000000; background-color: #ff7f7f')
                 self.dlg.EstatConnexio.setText('Error: Problema en la connexió.')
+                self.dlg.setEnabled(True)
                 return
         else:
             self.dlg.EstatConnexio.setText('No connectat')
