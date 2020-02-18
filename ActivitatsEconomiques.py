@@ -81,7 +81,7 @@ micolor_ZI=None
 micolor_Graf=None
 Fitxer=""
 Path_Inicial=expanduser("~")
-Versio_modul="V_Q3.200214"
+Versio_modul="V_Q3.200218"
 progress=None
 
 class ActivitatsEconomiques:
@@ -310,7 +310,7 @@ class ActivitatsEconomiques:
         self.dlg.btn_mostra_sel.setVisible(False)
         self.dlg.Mostra_punt_chk.setChecked(True)
         self.dlg.chk_calc_local.setChecked(True)
-        
+        self.dlg.setEnabled(True)
 
         QApplication.processEvents()
         
@@ -1969,6 +1969,7 @@ class ActivitatsEconomiques:
             self.dlg.Progres.setVisible(False)
             self.dlg.lblEstatConn.setText('Connectat')
             self.dlg.lblEstatConn.setStyleSheet('border:1px solid #000000; background-color: #7fff7f')
+            self.dlg.setEnabled(True)
             self.dlg.setEnabled(True)
             
     def on_click_Sortir(self):
