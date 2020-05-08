@@ -1253,7 +1253,7 @@ class ActivitatsEconomiques:
 #       *****************************************************************************************************************
         """S'afegeixen els trams inicials de cada graf per modificarlos posteriorment"""
         sql_1="insert into \"fraccio_trams_raw\" (select SX.\"the_geom\",PI.\"pid\" as punt_id,SX.\"id\"as id_tram,999 as fraccio,SX.\"source\" as node,PI.\"fraction\" as fraccio_inicial,SX.\"cost\",SX.\"reverse_cost\" from \"Xarxa_Graf\" SX inner join (Select \"edge_id\",(\"pid\"::integer) as pid,\"fraction\" from \"punts_interes_tmp\") PI on SX.\"id\"=PI.\"edge_id\");\n"
-        print (sql_1)
+        #print (sql_1)
         try:
             cur.execute(sql_1)
             conn.commit()
