@@ -81,7 +81,7 @@ micolor_ZI=None
 micolor_Graf=None
 Fitxer=""
 Path_Inicial=expanduser("~")
-Versio_modul="V_Q3.200218"
+Versio_modul="V_Q3.200508"
 progress=None
 
 class ActivitatsEconomiques:
@@ -886,8 +886,8 @@ class ActivitatsEconomiques:
         sql_1+="DROP TABLE IF EXISTS tbl_punts_finals_tmp;\n"
 
         """Creació de la taula 'tbl_punts_finsl_tmp' on es tindrà tots els nodes de la xarxa que son a dins del radi fix d'acci� indicat"""
-        sql_1+="CREATE local temporary TABLE tbl_punts_finals_tmp AS(SELECT node,agg_cost,start_vid FROM pgr_withPointsDD('SELECT id, source, target, cost, reverse_cost FROM \"Xarxa_Graf\" ORDER BY \"Xarxa_Graf\".id','SELECT pid, edge_id, fraction, side from \"punts_interes_tmp\"',array(select \"pid\"*(-1) from \"punts_interes_tmp\"),"+self.dlg.Radi_ZI.text()+",driving_side := 'b',details := false));\n"
-        #print sql_1
+        sql_1+="CREATE local temporary TABLE tbl_punts_finals_tmp AS(SELECT node,agg_cost,start_vid FROM pgr_withPointsDD('SELECT id, source, target, cost, reverse_cost FROM \"Xarxa_Graf\" ORDER BY \"Xarxa_Graf\".id','SELECT (pid::integer) as pid, edge_id, fraction, side from \"punts_interes_tmp\"',array(select (\"pid\"::integer)*(-1) from \"punts_interes_tmp\"),"+self.dlg.Radi_ZI.text()+",driving_side := 'b',details := false));\n"
+        #print (sql_1)
         
         try:
             cur.execute(sql_1)
@@ -1252,8 +1252,8 @@ class ActivitatsEconomiques:
 #       INICI INSERTAR ELS TRAMS INICIALS DELS QUE PARTIRA EL GRAF 
 #       *****************************************************************************************************************
         """S'afegeixen els trams inicials de cada graf per modificarlos posteriorment"""
-        sql_1="insert into \"fraccio_trams_raw\" (select SX.\"the_geom\",PI.\"pid\" as punt_id,SX.\"id\"as id_tram,999 as fraccio,SX.\"source\" as node,PI.\"fraction\" as fraccio_inicial,SX.\"cost\",SX.\"reverse_cost\" from \"Xarxa_Graf\" SX inner join (Select \"edge_id\",\"pid\",\"fraction\" from \"punts_interes_tmp\") PI on SX.\"id\"=PI.\"edge_id\");\n"
-        #print sql_1
+        sql_1="insert into \"fraccio_trams_raw\" (select SX.\"the_geom\",PI.\"pid\" as punt_id,SX.\"id\"as id_tram,999 as fraccio,SX.\"source\" as node,PI.\"fraction\" as fraccio_inicial,SX.\"cost\",SX.\"reverse_cost\" from \"Xarxa_Graf\" SX inner join (Select \"edge_id\",(\"pid\"::integer) as pid,\"fraction\" from \"punts_interes_tmp\") PI on SX.\"id\"=PI.\"edge_id\");\n"
+        print (sql_1)
         try:
             cur.execute(sql_1)
             conn.commit()
@@ -1293,7 +1293,8 @@ class ActivitatsEconomiques:
             sql_1+=","
             sql_1+="(case when (FT.\"fraccio_inicial\"+("+self.dlg.Radi_ZI.text()+"/"+cost_tram+"))<1 then (FT.\"fraccio_inicial\"+("+self.dlg.Radi_ZI.text()+"/"+cost_tram+")) else 1 end)"
             sql_1+=") as the_geom, FT.\"punt_id\",FT.\"id_tram\",FT.\"fraccio\" "
-            sql_1+="from \"fraccio_trams_raw\"FT inner join (select SX.\"the_geom\" as the_geom,SX.\"id\" as tram_xarxa from \"SegmentsXarxaCarrers\" SX, \"punts_interes_tmp\" PI where SX.\"id\"=PI.\"edge_id\") SXI on FT.\"id_tram\"=SXI.tram_xarxa where FT.\"fraccio\"=999) final"
+            sql_1+="from \"fraccio_trams_raw\"FT inner join (select SX.\"the_geom\" as the_geom,SX.\"id\" as tram_xarxa from \"Xarxa_Graf\" SX, \"punts_interes_tmp\" PI where SX.\"id\"=PI.\"edge_id\") SXI on FT.\"id_tram\"=SXI.tram_xarxa where FT.\"fraccio\"=999) final"
+            #sql_1+="from \"fraccio_trams_raw\"FT inner join (select SX.\"the_geom\" as the_geom,SX.\"id\" as tram_xarxa from \"SegmentsXarxaCarrers\" SX, \"punts_interes_tmp\" PI where SX.\"id\"=PI.\"edge_id\") SXI on FT.\"id_tram\"=SXI.tram_xarxa where FT.\"fraccio\"=999) final"
             sql_1+=" where \"fraccio_trams_raw\".\"punt_id\"=final.\"punt_id\" and \"fraccio_trams_raw\".\"fraccio\"=999;\n"
         else:
             """ Calcul amb temps i radi variable"""
@@ -1305,14 +1306,16 @@ class ActivitatsEconomiques:
             sql_1+=","
             sql_1+="FT.\"fraccio_inicial\""
             sql_1+=") as the_geom, FT.\"punt_id\" "
-            sql_1+="from \"fraccio_trams_raw\"FT inner join (select SX.\"the_geom\" as the_geom,SX.\"id\" as tram_xarxa from \"SegmentsXarxaCarrers\" SX, \"punts_interes_tmp\" PI where SX.\"id\"=PI.\"edge_id\") SXI on FT.\"id_tram\"=SXI.tram_xarxa where FT.\"fraccio\"=999"
+            sql_1+="from \"fraccio_trams_raw\"FT inner join (select SX.\"the_geom\" as the_geom,SX.\"id\" as tram_xarxa from \"Xarxa_Graf\" SX, \"punts_interes_tmp\" PI where SX.\"id\"=PI.\"edge_id\") SXI on FT.\"id_tram\"=SXI.tram_xarxa where FT.\"fraccio\"=999"
+            #sql_1+="from \"fraccio_trams_raw\"FT inner join (select SX.\"the_geom\" as the_geom,SX.\"id\" as tram_xarxa from \"SegmentsXarxaCarrers\" SX, \"punts_interes_tmp\" PI where SX.\"id\"=PI.\"edge_id\") SXI on FT.\"id_tram\"=SXI.tram_xarxa where FT.\"fraccio\"=999"
             sql_1+="UNION "
             sql_1+="select ST_Line_Substring((SXI.\"the_geom\"),"
             sql_1+="FT.\"fraccio_inicial\""
             sql_1+=","
             sql_1+="(case when (FT.\"fraccio_inicial\"+("+self.dlg.Radi_ZI.text()+"/(FT.\"cost_directe\")))<1 then (FT.\"fraccio_inicial\"+("+self.dlg.Radi_ZI.text()+"/(FT.\"cost_directe\"))) else 1 end)"
             sql_1+=") as the_geom, FT.\"punt_id\" "
-            sql_1+="from \"fraccio_trams_raw\"FT inner join (select SX.\"the_geom\" as the_geom,SX.\"id\" as tram_xarxa from \"SegmentsXarxaCarrers\" SX, \"punts_interes_tmp\" PI where SX.\"id\"=PI.\"edge_id\") SXI on FT.\"id_tram\"=SXI.tram_xarxa where FT.\"fraccio\"=999) TOT GROUP BY TOT.\"punt_id\") final"
+            sql_1+="from \"fraccio_trams_raw\"FT inner join (select SX.\"the_geom\" as the_geom,SX.\"id\" as tram_xarxa from \"Xarxa_Graf\" SX, \"punts_interes_tmp\" PI where SX.\"id\"=PI.\"edge_id\") SXI on FT.\"id_tram\"=SXI.tram_xarxa where FT.\"fraccio\"=999) TOT GROUP BY TOT.\"punt_id\") final"
+            #sql_1+="from \"fraccio_trams_raw\"FT inner join (select SX.\"the_geom\" as the_geom,SX.\"id\" as tram_xarxa from \"SegmentsXarxaCarrers\" SX, \"punts_interes_tmp\" PI where SX.\"id\"=PI.\"edge_id\") SXI on FT.\"id_tram\"=SXI.tram_xarxa where FT.\"fraccio\"=999) TOT GROUP BY TOT.\"punt_id\") final"
             sql_1+=" where \"fraccio_trams_raw\".\"punt_id\"=final.\"punt_id\" and \"fraccio_trams_raw\".\"fraccio\"=999;\n"
         
         try:
@@ -1755,6 +1758,14 @@ class ActivitatsEconomiques:
                             sql_activitat += '\"NumPol\" = (SELECT \"NumPol\" FROM \"BrossaComercial\" WHERE \"buffer_final_'+Fitxer+'\".\"punt_id\" = \"BrossaComercial\".\"id\"),'
                             sql_activitat += '\"METRES2\" = (SELECT \"METRES2\" FROM \"BrossaComercial\" WHERE \"buffer_final_'+Fitxer+'\".\"punt_id\" = \"BrossaComercial\".\"id\"),'
                             sql_activitat += '\"REF_CADAST\" = (SELECT \"CADASREF\" FROM \"BrossaComercial\" WHERE \"buffer_final_'+Fitxer+'\".\"punt_id\" = \"BrossaComercial\".\"id\");'
+
+                            '''
+                            sql_activitat += '\"Nom\" = (SELECT \"BrossaComercial\".\"FULLNAME\" FROM \"BrossaComercial\",\"buffer_final_'+Fitxer+'\" WHERE \"buffer_final_'+Fitxer+'\".\"punt_id\" = \"BrossaComercial\".\"id\"),'
+                            sql_activitat += '\"EPIGRAFIAE\" = (SELECT \"BrossaComercial\".\"EPIGRAFIAE\" FROM \"BrossaComercial\",\"buffer_final_'+Fitxer+'\" WHERE \"buffer_final_'+Fitxer+'\".\"punt_id\" = \"BrossaComercial\".\"id\"),'
+                            sql_activitat += '\"NumPol\" = (SELECT \"BrossaComercial\".\"NumPol\" FROM \"BrossaComercial\",\"buffer_final_'+Fitxer+'\" WHERE \"buffer_final_'+Fitxer+'\".\"punt_id\" = \"BrossaComercial\".\"id\"),'
+                            sql_activitat += '\"METRES2\" = (SELECT \"BrossaComercial\".\"METRES2\" FROM \"BrossaComercial\",\"buffer_final_'+Fitxer+'\" WHERE \"buffer_final_'+Fitxer+'\".\"punt_id\" = \"BrossaComercial\".\"id\"),'
+                            sql_activitat += '\"REF_CADAST\" = (SELECT \"BrossaComercial\".\"CADASREF\" FROM \"BrossaComercial\",\"buffer_final_'+Fitxer+'\" WHERE \"buffer_final_'+Fitxer+'\".\"punt_id\" = \"BrossaComercial\".\"id\");'
+                            '''
                             cur.execute(sql_activitat)
                             conn.commit()                   
 #                       *****************************************************************************************************************
