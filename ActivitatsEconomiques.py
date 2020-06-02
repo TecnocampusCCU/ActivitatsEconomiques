@@ -53,6 +53,9 @@ from qgis.core import QgsVectorLayerSimpleLabeling
 from qgis.core import QgsProcessingFeedback, Qgis
 from qgis.core import QgsProcessingFeedback, Qgis,QgsCoordinateReferenceSystem,QgsVectorLayerExporter
 from qgis.gui import QgsMessageBar
+from qgis.core import QgsFeature
+from qgis.core import QgsGeometry
+
 import psycopg2
 import unicodedata
 import datetime
@@ -61,6 +64,8 @@ from qgis.utils import iface
 from PyQt5.QtSql import *
 import datetime
 import time
+import qgis.utils
+import collections
 
 # Initialize Qt resources from file resources.py
 from .resources import *
@@ -81,7 +86,7 @@ micolor_ZI=None
 micolor_Graf=None
 Fitxer=""
 Path_Inicial=expanduser("~")
-Versio_modul="V_Q3.200508"
+Versio_modul="V_Q3.200602"
 progress=None
 
 class ActivitatsEconomiques:
@@ -657,8 +662,8 @@ class ActivitatsEconomiques:
             self.dlg.CostNusos.setVisible(True)
             self.dlg.CostInvers_chk.setChecked(True)
             self.dlg.CostInvers_chk.setVisible(True)
-            self.dlg.chk_calc_local.setEnabled(False)
-            self.dlg.chk_calc_local.setChecked(False)
+            self.dlg.chk_calc_local.setEnabled(True)
+            self.dlg.chk_calc_local.setChecked(True)
         return 0
     def on_Change_GrafCombo(self):
         """Aquesta es una funcio fa una crida a una funci� auxiliar"""
@@ -1524,6 +1529,427 @@ class ActivitatsEconomiques:
                                                              "OUTPUT": 'memory:'})        
         
         return result_buffer_dissolve,result_dissolve,buffer_dissolved
+
+    
+    def troba_distancia(self,linea,punt):
+        distancia=linea.geometry().lineLocatePoint(punt.geometry())
+        return distancia
+    def troba_posicio(self,id,llista_id):
+        resultat=[]
+        for j,x in enumerate(llista_id):
+            #print (x)
+            if id==x:
+                #print ("id:"+str(id))
+                resultat.append(j)
+        return resultat
+        
+    def calcula_distancies(self,linea,posicio,punts):
+        resultat=[]
+        for i in range(len(posicio)):
+            #print (posicio[i])
+            resultat.append([posicio[i],self.troba_distancia(linea,punts[posicio[i]])])
+        resultat=sorted(resultat, key=lambda x: x[1])
+        return resultat
+    
+    def Calcula_VEL_KMH(self,xarxa,crs,uri):
+         # Invertir dirección de línea
+        alg_params = {
+        'INPUT': xarxa,
+        'OUTPUT': 'memory:'
+        }
+        outputs={}
+        outputs['InvertirDireccinDeLnea'] = processing.run('native:reverselinedirection', alg_params)
+        
+        if (self.dlg.CostInvers_chk.isChecked()):
+
+            # VEL_PS=0
+            alg_params = {
+                'FIELD_LENGTH': 10,
+                'FIELD_NAME': 'VELOCITAT_PS',
+                'FIELD_PRECISION': 9,
+                'FIELD_TYPE': 0,
+                'FORMULA': '0*0',
+                'INPUT': outputs['InvertirDireccinDeLnea']['OUTPUT'],
+                'NEW_FIELD': False,
+                'OUTPUT': 'memory:'
+            }
+            outputs['Vel_ps0'] = processing.run('qgis:fieldcalculator', alg_params)
+    
+            # VEL_PS_INV=0
+            alg_params = {
+                'FIELD_LENGTH': 10,
+                'FIELD_NAME': 'VELOCITAT_PS_INV',
+                'FIELD_PRECISION': 9,
+                'FIELD_TYPE': 0,
+                'FORMULA': '0*0',
+                'INPUT': xarxa,
+                'NEW_FIELD': False,
+                'OUTPUT': 'memory:'
+            }
+            outputs['Vel_ps_inv0'] = processing.run('qgis:fieldcalculator', alg_params)
+        
+           # CREACIO_VEL_KMH_INV
+            alg_params = {
+                'FIELD_LENGTH': 10,
+                'FIELD_NAME': 'VEL_KMH',
+                'FIELD_PRECISION': 9,
+                'FIELD_TYPE': 0,
+                'FORMULA': '\"VELOCITAT_PS_INV\"*60/1000',
+                'INPUT': outputs['Vel_ps0']['OUTPUT'],
+                'NEW_FIELD': False,
+                'OUTPUT': 'memory:'
+            }
+            outputs['Creacio_vel_kmh_inv'] = processing.run('qgis:fieldcalculator', alg_params)
+        
+            # CREACIO_VEL_KMH_DIREC
+            alg_params = {
+                'FIELD_LENGTH': 10,
+                'FIELD_NAME': 'VEL_KMH',
+                'FIELD_PRECISION': 9,
+                'FIELD_TYPE': 0,
+                'FORMULA': 'VELOCITAT_PS*60/1000',
+                'INPUT': outputs['Vel_ps_inv0']['OUTPUT'],
+                'NEW_FIELD': True,
+                'OUTPUT': 'memory:'
+            }
+            outputs['Creacio_vel_kmh_direc'] = processing.run('qgis:fieldcalculator', alg_params)
+                    
+        else:
+            # VEL_PS=0
+            alg_params = {
+                'FIELD_LENGTH': 10,
+                'FIELD_NAME': 'VELOCITAT_PS_INV',
+                'FIELD_PRECISION': 9,
+                'FIELD_TYPE': 0,
+                'FORMULA': '0*0',
+                'INPUT': outputs['InvertirDireccinDeLnea']['OUTPUT'],
+                'NEW_FIELD': False,
+                'OUTPUT': 'memory:'
+            }
+            outputs['Vel_ps0'] = processing.run('qgis:fieldcalculator', alg_params)
+    
+            # VEL_PS_INV=0
+            alg_params = {
+                'FIELD_LENGTH': 10,
+                'FIELD_NAME': 'VELOCITAT_PS_INV',
+                'FIELD_PRECISION': 9,
+                'FIELD_TYPE': 0,
+                'FORMULA': '0*0',
+                'INPUT': xarxa,
+                'NEW_FIELD': False,
+                'OUTPUT': 'memory:'
+            }
+            outputs['Vel_ps_inv0'] = processing.run('qgis:fieldcalculator', alg_params)
+        
+           # CREACIO_VEL_KMH_INV
+            alg_params = {
+                'FIELD_LENGTH': 10,
+                'FIELD_NAME': 'VEL_KMH',
+                'FIELD_PRECISION': 9,
+                'FIELD_TYPE': 0,
+                'FORMULA': '\"VELOCITAT_PS\"*60/1000',
+                'INPUT': outputs['Vel_ps0']['OUTPUT'],
+                'NEW_FIELD': False,
+                'OUTPUT': 'memory:'
+            }
+            outputs['Creacio_vel_kmh_inv'] = processing.run('qgis:fieldcalculator', alg_params)
+        
+            # CREACIO_VEL_KMH_DIREC
+            alg_params = {
+                'FIELD_LENGTH': 10,
+                'FIELD_NAME': 'VEL_KMH',
+                'FIELD_PRECISION': 9,
+                'FIELD_TYPE': 0,
+                'FORMULA': 'VELOCITAT_PS*60/1000',
+                'INPUT': outputs['Vel_ps_inv0']['OUTPUT'],
+                'NEW_FIELD': True,
+                'OUTPUT': 'memory:'
+            }
+            outputs['Creacio_vel_kmh_direc'] = processing.run('qgis:fieldcalculator', alg_params)
+        
+        # Unir capas vectoriales
+        alg_params = {
+            'CRS': QgsCoordinateReferenceSystem('EPSG:'+str(crs)),
+            'LAYERS': [outputs['Creacio_vel_kmh_direc']['OUTPUT'],outputs['Creacio_vel_kmh_inv']['OUTPUT']],
+            'OUTPUT': 'memory:'
+        }
+        outputs['UnirCapasVectoriales'] = processing.run('native:mergevectorlayers', alg_params)
+    
+        # DIRECCIO
+        alg_params = {
+            'FIELD_LENGTH': 10,
+            'FIELD_NAME': 'DIRECCIO',
+            'FIELD_PRECISION': 3,
+            'FIELD_TYPE': 2,
+            'FORMULA': '\'D\'',
+            'INPUT': outputs['UnirCapasVectoriales']['OUTPUT'],
+            'NEW_FIELD': True,
+            'OUTPUT': 'memory:'
+        }
+        outputs['Direccio'] = processing.run('qgis:fieldcalculator', alg_params)
+
+        if (self.dlg.CostNusos.isChecked()):
+            # CREACIO_L_TRAM_TEMP
+            alg_params = {
+                'FIELD_LENGTH': 10,
+                'FIELD_NAME': 'L_TRAM_TEMP',
+                'FIELD_PRECISION': 9,
+                'FIELD_TYPE': 0,
+                'FORMULA': '$length',
+                'INPUT': outputs['Direccio']['OUTPUT'],
+                'NEW_FIELD': True,
+                'OUTPUT': 'memory:'
+            }
+            outputs['Direccio'] = processing.run('qgis:fieldcalculator', alg_params)        
+        return outputs['Direccio']['OUTPUT']
+                
+        #print (outputs)
+    
+    def calcul_graf3(self,sql_punts,sql_xarxa,uri2):
+        #               *****************************************************************************************************************
+        #               INICI CARREGA DE LES ILLES, PARCELES O PORTALS QUE QUEDEN AFECTATS PEL BUFFER DEL GRAF 
+        #               *****************************************************************************************************************
+        #                uri.setDataSource("","("+sql_total+")","geom","","id")
+        global Fitxer
+        QApplication.processEvents()
+        uri2.setDataSource("","("+sql_punts+")","geom","","id")
+        QApplication.processEvents()
+        punts_lyr = QgsVectorLayer(uri2.uri(False), "punts", "postgres")
+        QApplication.processEvents()
+        uri2.setDataSource("","("+sql_xarxa+")","the_geom","","id")
+        QApplication.processEvents()
+        network_lyr = QgsVectorLayer(uri2.uri(False), "xarxa", "postgres")
+        QApplication.processEvents()
+        #if (punts_lyr.isValid() and network_lyr.isValid()):
+        #************************************************************************************
+        #************************************************************************************
+        outputs = {}
+        epsg = network_lyr.crs().postgisSrid()
+        
+        alg_params = {
+            'INPUT': punts_lyr,
+            'OPERATION': '',
+            'TARGET_CRS': QgsCoordinateReferenceSystem('EPSG:'+str(epsg)),
+            'OUTPUT': 'memory:'
+        }
+        outputs['ReproyectarCapa'] = processing.run('native:reprojectlayer', alg_params)
+        
+        #p_lyr = punts_lyr 
+        p_lyr = outputs['ReproyectarCapa']['OUTPUT']
+        graf = network_lyr
+        
+
+        l_lyr=self.Calcula_VEL_KMH(graf,epsg,uri2)
+        
+        #QgsProject.instance().addMapLayer(l_lyr)
+        
+        
+        lines_features = [ line_feature for line_feature in l_lyr.getFeatures() ] 
+        points_features = [ point_feature for point_feature in p_lyr.getFeatures() ]
+        vl = QgsVectorLayer("LineString?crs=epsg:" + str(epsg), "Lineas2", "memory")
+        pr = vl.dataProvider()
+        lista=[]
+        for field in lines_features[0].fields():
+            lista.append(field)
+        
+        #print (lista)
+        pr.addAttributes(lista)
+            
+        vl.updateFields()
+        feats = []
+        puntos=[]
+        idx_lines=[]
+        punts_id=[]
+        Trams0_id=[]
+        Trams1_id=[]
+        Trams_id=[]
+        repetits=[]
+        for p in points_features:
+            lineas=[]
+            for l in lines_features:
+                lineas.append([l.geometry().closestSegmentWithContext( p.geometry().asPoint() )])
+            punts_id.append(min(lineas)[0][1])
+            Trams0_id.append(lineas.index(sorted(lineas)[0])+1)
+            Trams1_id.append(lineas.index(sorted(lineas)[1])+1)
+        Trams_id.append([0,Trams0_id])
+        Trams_id.append([1,Trams1_id])
+        #print(Trams0_id)
+        #print(Trams1_id)
+        #print(Trams_id)
+        #print(Trams_id[0][1])
+        #print(Trams_id[1][1])
+        
+        repetits.append([x for x, y in collections.Counter(Trams_id[0][1]).items() if y > 1])
+        repetits.append([x for x, y in collections.Counter(Trams_id[1][1]).items() if y > 1])
+        #print(repetits)
+        
+        trams_fets=[]
+        feat_temp = QgsFeature()
+        for index_punt,p in enumerate(points_features):
+            #print(index_punt)
+            #print (repetits)
+            for i in range(2):
+                linea_cut=lines_features[Trams_id[i][1][index_punt]-1]
+                if ([linea_cut.id()]) not in repetits:
+                    idx_lines.append(linea_cut.id())
+        
+                    start=0
+                    distancia=round(self.troba_distancia(linea_cut,p),3)
+                    longitud=round(linea_cut.geometry().length(),3)
+                    lp=linea_cut.geometry().constGet()
+                    newgeom=QgsGeometry(lp.curveSubstring(start,distancia))
+                    #print(newgeom)
+                    f=QgsFeature()
+                    f.setAttributes(linea_cut.attributes())
+                    f.setGeometry(newgeom)
+                    feats.append(f)
+        
+                    newgeom=QgsGeometry(lp.curveSubstring(distancia,longitud))
+                    #print(newgeom)
+                    f=QgsFeature()
+                    f.setAttributes(linea_cut.attributes())
+                    f.setGeometry(newgeom)
+                    feats.append(f)
+                else:
+                    #print("REPE")
+                    #break
+                    id_tram_Read=linea_cut.id()
+                    if id_tram_Read not in trams_fets:
+                        trams_fets.append(id_tram_Read)
+        
+                        idx_lines.append(id_tram_Read)
+                        posicio=self.troba_posicio(linea_cut.id(),Trams_id[i][1])
+                        llista_dist=self.calcula_distancies(linea_cut,posicio,points_features)
+                        #En llista_dist estan ordenat de menor distancia a major distancia
+                        
+                        #break
+                        start=0
+                        #distancia=troba_distancia(linea_cut,p)
+                        longitud=round(linea_cut.geometry().length(),3)
+                        #print (longitud)
+                        lp=linea_cut.geometry().constGet()
+                        for x in range(len(posicio)):
+                            if x==0:
+                                start=0
+                            else:
+                                start=round(llista_dist[x-1][1],3)
+                            
+                            distancia=round(llista_dist[x][1],3)
+        
+                            newgeom=QgsGeometry(lp.curveSubstring(start,distancia))
+                            f=QgsFeature()
+                            f.setAttributes(linea_cut.attributes())
+                            f.setGeometry(newgeom)
+                            feats.append(f)
+        
+                        newgeom=QgsGeometry(lp.curveSubstring(distancia,longitud))
+                        f=QgsFeature()
+                        f.setAttributes(linea_cut.attributes())
+                        f.setGeometry(newgeom)
+                        feats.append(f)
+                        
+                    #for x in range(Trams_id[i][1].count(lines_features[Trams_id[i][1][p.id()-1]-1].id())):
+                        
+            minDistPoint = punts_id[index_punt]
+            punto = QgsFeature()
+            punto.setGeometry(QgsGeometry.fromPointXY(minDistPoint))
+        
+            punto.setAttributes([points_features.index(p),123])
+            puntos.append(punto)
+            #print (trams_fets)
+        for current,feat_item in enumerate(lines_features):
+            if (current+1) not in idx_lines:
+                feats.append(feat_item)
+        pr.addFeatures(feats)
+        vl.updateExtents()
+        #QgsProject.instance().addMapLayer(vl)
+        #outputs={}
+        
+        if (self.dlg.CostNusos.isChecked()):
+
+            # AFEGIR COST DE SEMAFORS A VEL_KMH
+            print("entra")
+            alg_params = {
+                'FIELD_LENGTH': 10,
+                'FIELD_NAME': 'VEL_KMH',
+                'FIELD_PRECISION': 9,
+                'FIELD_TYPE': 0,
+                'FORMULA': '($length /(($length/((\"VELOCITAT_PS\"+\"VELOCITAT_PS_INV\")))+(\"Cost_Total_Semafor_Tram\"*($length/\"L_TRAM_TEMP\"))))*60/1000',
+                'INPUT': vl,
+                'NEW_FIELD': False,
+                'OUTPUT': 'memory:'
+                #'OUTPUT': 'postgres: table="public"."testpep" (geom) '+uri.connectionInfo()
+            }
+            outputs['vel_kmh_amb_sem'] = processing.run('qgis:fieldcalculator', alg_params)
+            layer=outputs['vel_kmh_amb_sem']['OUTPUT']
+        else:
+            layer=vl
+
+        # AreaServei
+        alg_params = {
+            'DEFAULT_DIRECTION': 0,
+            'DEFAULT_SPEED': 50,
+            'DIRECTION_FIELD': 'DIRECCIO',
+            'INCLUDE_BOUNDS': False,
+            'INPUT':layer,
+            'SPEED_FIELD': 'VEL_KMH',
+            'START_POINTS': p_lyr,
+            'STRATEGY': 1,
+            'TOLERANCE': 0.1,
+            'TRAVEL_COST': str(int(self.dlg.Radi_ZI.text())*60),
+            'VALUE_BACKWARD': '',
+            'VALUE_BOTH': '',
+            'VALUE_FORWARD': 'D',
+            'OUTPUT_LINES':'memory:'
+        }
+        outputs['Areaservei'] = processing.run('qgis:serviceareafromlayer', alg_params)
+#         parameters = {'INPUT': network_lyr,
+#                       'START_POINTS': punts_lyr,
+#                       'STRATEGY': 0,
+#                       'TRAVEL_COST':self.dlg.TL_Dist_Cost.text(),
+#                       'DIRECTION_FIELD': '',
+#                       'VALUE_FORWARD': '',
+#                       'VALUE_BACKWARD': '',
+#                       'VALUE_BOTH': '',
+#                       'DEFAULT_DIRECTION': 2,
+#                       'SPEED_FIELD': '',
+#                       'DEFAULT_SPEED': 1,
+#                       'TOLERANCE': 0,
+#                       'INCLUDE_BOUNDS': 0,
+#                       'OUTPUT_LINES': 'memory:',
+#                       'OUTPUT': 'memory:'}
+#         linias_graf = processing.run('qgis:serviceareafromlayer', parameters)
+        
+        #************************************************************************************
+        #************************************************************************************
+        #result_buffer = processing.run('native:buffer', {"INPUT": network_lyr,
+        # native:dissolve
+        result_dissolve = processing.run('native:dissolve', {"INPUT": outputs['Areaservei']['OUTPUT_LINES'],
+                                                             "FIELD": 'id',
+                                                             "OUTPUT": 'memory:'})        
+
+        result_singleparts = processing.run('native:multiparttosingleparts', {"INPUT": outputs['Areaservei']['OUTPUT_LINES'],
+                                                                              "OUTPUT": 'memory:'})
+        result_buffer = processing.run('native:buffer', {"INPUT": result_singleparts['OUTPUT'],
+                                                         "DISTANCE": 20,
+                                                         "SEGMENTS": 5,
+                                                         "END_CAP_STYLE":0,
+                                                         "JOIN_STYLE":0,
+                                                         "MITER_LIMIT":1,
+                                                         "DISSOLVE":0,
+                                                         "OUTPUT": 'memory:'})
+                                                         #"OUTPUT": 'postgres: table="public"."testpep" (geom) '+uri2.connectionInfo()})
+        
+        result_buffer_dissolve = processing.run('native:dissolve', {"INPUT": result_buffer['OUTPUT'],
+                                                                    "FIELD": 'id',
+                                                                    "OUTPUT": 'memory:'})
+        
+        buffer_dissolved = processing.run('native:dissolve', {"INPUT": result_buffer['OUTPUT'],
+                                                             "OUTPUT": 'memory:'})        
+        
+        return result_buffer_dissolve,result_dissolve,buffer_dissolved
+    
+  
     
     def on_click_INICI(self):
         """Aquesta funcio genera tots els calculs amb tots el parametres que li hem introduit
@@ -1696,7 +2122,14 @@ class ActivitatsEconomiques:
                 
                 if vlayer.isValid():
                     NumPol=datetime.datetime.now().strftime("%Y%m%d%H%M%S%f")
-                    error=QgsVectorFileWriter.writeAsVectorFormat(vlayer, os.environ['TMP']+"/NumPol_"+NumPol+".shp", "utf-8", vlayer.crs(), "ESRI Shapefile")
+                    if (qgis.utils.Qgis.QGIS_VERSION_INT>=31000):
+                        save_options = QgsVectorFileWriter.SaveVectorOptions()
+                        save_options.driverName = "ESRI Shapefile"
+                        save_options.fileEncoding = "UTF-8"
+                        transform_context = QgsProject.instance().transformContext()
+                        error=QgsVectorFileWriter.writeAsVectorFormatV2(vlayer, os.environ['TMP']+"/NumPol_"+NumPol+".shp",transform_context,save_options)
+                    else:
+                        error=QgsVectorFileWriter.writeAsVectorFormat(vlayer, os.environ['TMP']+"/NumPol_"+NumPol+".shp", "utf-8", vlayer.crs(), "ESRI Shapefile")
                     vlayer = QgsVectorLayer(os.environ['TMP']+"/NumPol_"+NumPol+".shp", titol3.decode('utf8'), "ogr")
                     symbols=vlayer.renderer().symbols(QgsRenderContext())
                     symbol=symbols[0]
@@ -1726,22 +2159,40 @@ class ActivitatsEconomiques:
 #                       INICI CALCUL DEL GRAF I DEL BUFFER DELS TRAMS CALCULATS 
 #                       *****************************************************************************************************************                            
                         if (self.dlg.chk_calc_local.isChecked() and self.dlg.ZIGraf_radio.isChecked()):
-                            sql_xarxa="SELECT * FROM \""+self.dlg.comboGraf.currentText()+"\""
-                            buffer_resultat,graf_resultat,buffer_dissolved=self.calcul_graf2(sql_total_graf2,sql_xarxa,uri)
-                            vlayer=buffer_resultat['OUTPUT']
-                            vlayer_graf=graf_resultat['OUTPUT']
-        
-                            #uri = "dbname='test' host=localhost port=5432 user='user' password='password' key=gid type=POINT table=\"public\".\"test\" (geom) sql="
-                            # layer - QGIS vector layer
-                            error = QgsVectorLayerExporter.exportLayer(vlayer, 'table="public"."buffer_final_'+Fitxer+'" (the_geom) '+uri.connectionInfo(), "postgres", vlayer.crs(), False)
-                            if error[0] != 0:
-                                iface.messageBar().pushMessage(u'Error', error[1])
-                                
-                            #error = QgsVectorLayerExporter.exportLayer(buffer_dissolved['OUTPUT'], 'table="public"."buffer_diss_'+Fitxer+'" (the_geom) '+uri.connectionInfo(), "postgres", vlayer.crs(), False)
-                            #if error[0] != 0:
-                            #    iface.messageBar().pushMessage(u'Error', error[1])
-                                
-                            sql_buffer="SELECT * FROM \"buffer_final_"+Fitxer+"\""                        
+                            if (self.dlg.GrafCombo.currentText()=="Distancia"):
+                                sql_xarxa="SELECT * FROM \""+self.dlg.comboGraf.currentText()+"\""
+                                buffer_resultat,graf_resultat,buffer_dissolved=self.calcul_graf2(sql_total_graf2,sql_xarxa,uri)
+                                vlayer=buffer_resultat['OUTPUT']
+                                vlayer_graf=graf_resultat['OUTPUT']
+            
+                                #uri = "dbname='test' host=localhost port=5432 user='user' password='password' key=gid type=POINT table=\"public\".\"test\" (geom) sql="
+                                # layer - QGIS vector layer
+                                error = QgsVectorLayerExporter.exportLayer(vlayer, 'table="public"."buffer_final_'+Fitxer+'" (the_geom) '+uri.connectionInfo(), "postgres", vlayer.crs(), False)
+                                if error[0] != 0:
+                                    iface.messageBar().pushMessage(u'Error', error[1])
+                                    
+                                #error = QgsVectorLayerExporter.exportLayer(buffer_dissolved['OUTPUT'], 'table="public"."buffer_diss_'+Fitxer+'" (the_geom) '+uri.connectionInfo(), "postgres", vlayer.crs(), False)
+                                #if error[0] != 0:
+                                #    iface.messageBar().pushMessage(u'Error', error[1])
+                                    
+                                sql_buffer="SELECT * FROM \"buffer_final_"+Fitxer+"\""
+                            else:
+                                sql_xarxa="SELECT * FROM \""+self.dlg.comboGraf.currentText()+"\""
+                                buffer_resultat,graf_resultat,buffer_dissolved=self.calcul_graf3(sql_total_graf2,sql_xarxa,uri)
+                                vlayer=buffer_resultat['OUTPUT']
+                                vlayer_graf=graf_resultat['OUTPUT']
+            
+                                #uri = "dbname='test' host=localhost port=5432 user='user' password='password' key=gid type=POINT table=\"public\".\"test\" (geom) sql="
+                                # layer - QGIS vector layer
+                                error = QgsVectorLayerExporter.exportLayer(vlayer, 'table="public"."buffer_final_'+Fitxer+'" (the_geom) '+uri.connectionInfo(), "postgres", vlayer.crs(), False)
+                                if error[0] != 0:
+                                    iface.messageBar().pushMessage(u'Error', error[1])
+                                    
+                                #error = QgsVectorLayerExporter.exportLayer(buffer_dissolved['OUTPUT'], 'table="public"."buffer_diss_'+Fitxer+'" (the_geom) '+uri.connectionInfo(), "postgres", vlayer.crs(), False)
+                                #if error[0] != 0:
+                                #    iface.messageBar().pushMessage(u'Error', error[1])
+                                    
+                                sql_buffer="SELECT * FROM \"buffer_final_"+Fitxer+"\""
                         
                         else:
                             sql_buffer=self.calcul_graf(sql_total)
@@ -1810,7 +2261,14 @@ class ActivitatsEconomiques:
                     vlayer = QgsVectorLayer(uri.uri(), titol3.decode('utf8'), "postgres")
                     if vlayer.isValid():
                         Tematic=datetime.datetime.now().strftime("%Y%m%d%H%M%S%f")
-                        error=QgsVectorFileWriter.writeAsVectorFormat(vlayer, os.environ['TMP']+"/Tematic_"+Tematic+".shp", "utf-8", vlayer.crs(), "ESRI Shapefile")
+                        if (qgis.utils.Qgis.QGIS_VERSION_INT>=31000):
+                            save_options = QgsVectorFileWriter.SaveVectorOptions()
+                            save_options.driverName = "ESRI Shapefile"
+                            save_options.fileEncoding = "UTF-8"
+                            transform_context = QgsProject.instance().transformContext()
+                            error=QgsVectorFileWriter.writeAsVectorFormatV2(vlayer, os.environ['TMP']+"/Tematic_"+Tematic+".shp",transform_context,save_options)
+                        else:
+                            error=QgsVectorFileWriter.writeAsVectorFormat(vlayer, os.environ['TMP']+"/Tematic_"+Tematic+".shp", "utf-8", vlayer.crs(), "ESRI Shapefile")
                         vlayer = QgsVectorLayer(os.environ['TMP']+"/Tematic_"+Tematic+".shp", titol3.decode('utf8'), "ogr")
                         #self.eliminaTaulesCalcul(Fitxer)
                         fieldname="Habitants"
@@ -1869,14 +2327,21 @@ class ActivitatsEconomiques:
                             sql_total1="select TOT.\"UTM\" as \"ogc_fid\",TOT.\"numae\",ST_Buffer(TOT.\"geom\","+self.dlg.Radi_ZI.text()+"::double precision) as the_geom from ("+sql+") TOT"
                             
                         uri.setDataSource("","("+sql_total1+")","the_geom","","ogc_fid")
-                        print(self.dlg.texte_2.text())
+                        #print(self.dlg.texte_2.text())
                         titol=self.dlg.texte_3.text().replace("'","\'")
                         titol2='Àrea influència dels números de policia amb activitat: '
                         titol3=titol2.encode('utf8','strict')+titol.encode('utf8','strict')
                         vlayer = QgsVectorLayer(uri.uri(), titol3.decode('utf8'), "postgres")
                         if vlayer.isValid():
                             Area=datetime.datetime.now().strftime("%Y%m%d%H%M%S%f")
-                            error=QgsVectorFileWriter.writeAsVectorFormat(vlayer, os.environ['TMP']+"/Area_"+Area+".shp", "utf-8", vlayer.crs(), "ESRI Shapefile")
+                            if (qgis.utils.Qgis.QGIS_VERSION_INT>=31000):
+                                save_options = QgsVectorFileWriter.SaveVectorOptions()
+                                save_options.driverName = "ESRI Shapefile"
+                                save_options.fileEncoding = "UTF-8"
+                                transform_context = QgsProject.instance().transformContext()
+                                error=QgsVectorFileWriter.writeAsVectorFormatV2(vlayer, os.environ['TMP']+"/Area_"+Area+".shp", transform_context,save_options)
+                            else:
+                                error=QgsVectorFileWriter.writeAsVectorFormat(vlayer, os.environ['TMP']+"/Area_"+Area+".shp", "utf-8", vlayer.crs(), "ESRI Shapefile")
                             vlayer=None
                             vlayer = QgsVectorLayer(os.environ['TMP']+"/Area_"+Area+".shp", titol3.decode('utf8'), "ogr")
                             #self.eliminaTaulesCalcul(Fitxer)
@@ -1907,12 +2372,17 @@ class ActivitatsEconomiques:
                         if (self.dlg.chk_calc_local.isChecked() and self.dlg.ZIGraf_radio.isChecked()):
                             vlayer=vlayer_graf
                         else:
-                            print("122")
                             vlayer = QgsVectorLayer(uri.uri(), titol3.decode('utf8'), "postgres")
-                            print("123")
                         if vlayer.isValid():
                             Graf=datetime.datetime.now().strftime("%Y%m%d%H%M%S%f")
-                            error=QgsVectorFileWriter.writeAsVectorFormat(vlayer, os.environ['TMP']+"/Graf_"+Graf+".shp", "utf-8", vlayer.crs(), "ESRI Shapefile")
+                            if (qgis.utils.Qgis.QGIS_VERSION_INT>=31000):
+                                save_options = QgsVectorFileWriter.SaveVectorOptions()
+                                save_options.driverName = "ESRI Shapefile"
+                                save_options.fileEncoding = "UTF-8"
+                                transform_context = QgsProject.instance().transformContext()
+                                error=QgsVectorFileWriter.writeAsVectorFormatV2(vlayer, os.environ['TMP']+"/Graf_"+Graf+".shp",transform_context,save_options)
+                            else:
+                                error=QgsVectorFileWriter.writeAsVectorFormat(vlayer, os.environ['TMP']+"/Graf_"+Graf+".shp", "utf-8", vlayer.crs(), "ESRI Shapefile")
                             vlayer = QgsVectorLayer(os.environ['TMP']+"/Graf_"+Graf+".shp", titol3.decode('utf8'), "ogr")
                             #self.eliminaTaulesCalcul(Fitxer)
 
