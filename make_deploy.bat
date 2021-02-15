@@ -1,5 +1,6 @@
 
 @echo off
+@rem VERSIÓ MAKE_DEPLOY 0.6
 @rem Carrega de l'entorn de treball
 set MYDIR=%cd%
 for %%f in (%MYDIR%) do set directory=%%~nxf
@@ -12,9 +13,13 @@ CALL %QGIS_PATH%\bin\py3_env.bat
 
 set directory_source="\\192.168.107.9\c$\xampp\htdocs\downloads\QGIS3\%directory%.zip"
 set directory_old="\\192.168.107.9\c$\xampp\htdocs\downloads\OLD\%directory%"
+set directory_plugins_xml=\\192.168.107.9\c$\xampp\htdocs
 
 %WINDIR%\System32\WindowsPowerShell\v1.0\powershell.exe %MYDIR%\Extract_metadata.ps1 %directory_source% %directory_old% %directory%
-for /f "delims=" %%a in ('%WINDIR%\System32\WindowsPowerShell\v1.0\powershell.exe %MYDIR%\ScriptPS.ps1 %directory_old%') do Set "$Value=%%a"
+for /f "delims=" %%a in ('%WINDIR%\System32\WindowsPowerShell\v1.0\powershell.exe %MYDIR%\ScriptPS.ps1 %directory_old%') do Set "$Version_old=%%a"
+
+for /f "delims=" %%a in ('%WINDIR%\System32\WindowsPowerShell\v1.0\powershell.exe %MYDIR%\ScriptPS.ps1 %MYDIR%') do Set "$Version_new=%%a"
+@echo Actualitzant %directory% [101;93mV.%$Version_old%[0m a [104;93mV.%$Version_new%.[0m
 
 
 @echo on
@@ -30,11 +35,14 @@ erase %directory_old%\metadata.txt
 @rem Creacio del ZIP file
 %WINDIR%\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "Compress-Archive -path %directory% -DestinationPath .\%directory%"
 
+@rem Modificació de l'arxiu plugins.xml al servidor
+%WINDIR%\System32\WindowsPowerShell\v1.0\powershell.exe %MYDIR%\Update_xml.ps1 %directory% %directory_plugins_xml% %$Version_old% %$Version_new%
+
 @rem Copia del ZIP resultant al servidor
 pushd "\\192.168.107.9\c$\xampp\htdocs\downloads\QGIS3"
-erase ..\OLD\%directory%\%directory%_%$Value%.ZIP
-@echo Movent plugin '%directory%' V.%$Value% ...
-copy .\%directory%.ZIP ..\OLD\%directory%\%directory%_%$Value%.ZIP
+erase ..\OLD\%directory%\%directory%_%$Version_old%.ZIP
+@echo Movent plugin '%directory%' V.%$Version_old% ...
+copy .\%directory%.ZIP ..\OLD\%directory%\%directory%_%$Version_old%.ZIP
 @echo. 
 erase %directory%.ZIP
 @echo Actualitzant plugin '%directory%' en servidor ...
@@ -44,7 +52,7 @@ popd
 @echo. 
 @echo [104;93m Plugin '%directory%' pujat al servidor.[0m
 @echo. 
-@echo [104;93m Plugin '%directory%' ver. %$Value% mogut a Repositori OLD del servidor.[0m
+@echo [104;93m Plugin '%directory%' ver. %$Version_old% mogut a Repositori OLD del servidor.[0m
 @echo. 
 @echo. 
 cmd /c "pause"

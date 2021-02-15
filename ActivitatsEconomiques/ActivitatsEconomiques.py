@@ -86,7 +86,7 @@ micolor_ZI=None
 micolor_Graf=None
 Fitxer=""
 Path_Inicial=expanduser("~")
-Versio_modul="V_Q3.210215"
+Versio_modul="V_Q3.200602"
 progress=None
 
 class ActivitatsEconomiques:
@@ -265,7 +265,6 @@ class ActivitatsEconomiques:
             parent=self.iface.mainWindow())
 
     def EstatInicial(self):
-        global TEMPORARY_PATH
         """Aquesta funcio reseteja l'estat de tots els elements de la interficie"""
         global Versio_modul
         self.bar.clearWidgets()
@@ -322,11 +321,6 @@ class ActivitatsEconomiques:
         
         #self.dlg.EstatConnexio.setStyleSheet('border:1px solid #000000; background-color: #ffff7f')
         self.dlg.Transparencia_lbl.setText(str(self.dlg.Transparencia.value())+' %')
-        if (os.name=='nt'):
-            TEMPORARY_PATH=os.environ['TMP']
-        else:
-            TEMPORARY_PATH=os.environ['TMPDIR']
-
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
         for action in self.actions:
@@ -1972,7 +1966,6 @@ class ActivitatsEconomiques:
         global cur
         global conn
         global progress
-        global TEMPORARY_PATH
 
 
         self.dlg.setEnabled(False)
@@ -2134,10 +2127,10 @@ class ActivitatsEconomiques:
                         save_options.driverName = "ESRI Shapefile"
                         save_options.fileEncoding = "UTF-8"
                         transform_context = QgsProject.instance().transformContext()
-                        error=QgsVectorFileWriter.writeAsVectorFormatV2(vlayer, TEMPORARY_PATH+"/NumPol_"+NumPol+".shp",transform_context,save_options)
+                        error=QgsVectorFileWriter.writeAsVectorFormatV2(vlayer, os.environ['TMP']+"/NumPol_"+NumPol+".shp",transform_context,save_options)
                     else:
-                        error=QgsVectorFileWriter.writeAsVectorFormat(vlayer, TEMPORARY_PATH+"/NumPol_"+NumPol+".shp", "utf-8", vlayer.crs(), "ESRI Shapefile")
-                    vlayer = QgsVectorLayer(TEMPORARY_PATH+"/NumPol_"+NumPol+".shp", titol3.decode('utf8'), "ogr")
+                        error=QgsVectorFileWriter.writeAsVectorFormat(vlayer, os.environ['TMP']+"/NumPol_"+NumPol+".shp", "utf-8", vlayer.crs(), "ESRI Shapefile")
+                    vlayer = QgsVectorLayer(os.environ['TMP']+"/NumPol_"+NumPol+".shp", titol3.decode('utf8'), "ogr")
                     symbols=vlayer.renderer().symbols(QgsRenderContext())
                     symbol=symbols[0]
                     symbol.setColor(self.dlg.ColorTopos.palette().color(1))
@@ -2273,10 +2266,10 @@ class ActivitatsEconomiques:
                             save_options.driverName = "ESRI Shapefile"
                             save_options.fileEncoding = "UTF-8"
                             transform_context = QgsProject.instance().transformContext()
-                            error=QgsVectorFileWriter.writeAsVectorFormatV2(vlayer, TEMPORARY_PATH+"/Tematic_"+Tematic+".shp",transform_context,save_options)
+                            error=QgsVectorFileWriter.writeAsVectorFormatV2(vlayer, os.environ['TMP']+"/Tematic_"+Tematic+".shp",transform_context,save_options)
                         else:
-                            error=QgsVectorFileWriter.writeAsVectorFormat(vlayer, TEMPORARY_PATH+"/Tematic_"+Tematic+".shp", "utf-8", vlayer.crs(), "ESRI Shapefile")
-                        vlayer = QgsVectorLayer(TEMPORARY_PATH+"/Tematic_"+Tematic+".shp", titol3.decode('utf8'), "ogr")
+                            error=QgsVectorFileWriter.writeAsVectorFormat(vlayer, os.environ['TMP']+"/Tematic_"+Tematic+".shp", "utf-8", vlayer.crs(), "ESRI Shapefile")
+                        vlayer = QgsVectorLayer(os.environ['TMP']+"/Tematic_"+Tematic+".shp", titol3.decode('utf8'), "ogr")
                         #self.eliminaTaulesCalcul(Fitxer)
                         fieldname="Habitants"
                         numberOfClasses=5
@@ -2346,11 +2339,11 @@ class ActivitatsEconomiques:
                                 save_options.driverName = "ESRI Shapefile"
                                 save_options.fileEncoding = "UTF-8"
                                 transform_context = QgsProject.instance().transformContext()
-                                error=QgsVectorFileWriter.writeAsVectorFormatV2(vlayer, TEMPORARY_PATH+"/Area_"+Area+".shp", transform_context,save_options)
+                                error=QgsVectorFileWriter.writeAsVectorFormatV2(vlayer, os.environ['TMP']+"/Area_"+Area+".shp", transform_context,save_options)
                             else:
-                                error=QgsVectorFileWriter.writeAsVectorFormat(vlayer, TEMPORARY_PATH+"/Area_"+Area+".shp", "utf-8", vlayer.crs(), "ESRI Shapefile")
+                                error=QgsVectorFileWriter.writeAsVectorFormat(vlayer, os.environ['TMP']+"/Area_"+Area+".shp", "utf-8", vlayer.crs(), "ESRI Shapefile")
                             vlayer=None
-                            vlayer = QgsVectorLayer(TEMPORARY_PATH+"/Area_"+Area+".shp", titol3.decode('utf8'), "ogr")
+                            vlayer = QgsVectorLayer(os.environ['TMP']+"/Area_"+Area+".shp", titol3.decode('utf8'), "ogr")
                             #self.eliminaTaulesCalcul(Fitxer)
                             symbols = vlayer.renderer().symbols(QgsRenderContext())
                             symbol=symbols[0]
@@ -2387,10 +2380,10 @@ class ActivitatsEconomiques:
                                 save_options.driverName = "ESRI Shapefile"
                                 save_options.fileEncoding = "UTF-8"
                                 transform_context = QgsProject.instance().transformContext()
-                                error=QgsVectorFileWriter.writeAsVectorFormatV2(vlayer, TEMPORARY_PATH+"/Graf_"+Graf+".shp",transform_context,save_options)
+                                error=QgsVectorFileWriter.writeAsVectorFormatV2(vlayer, os.environ['TMP']+"/Graf_"+Graf+".shp",transform_context,save_options)
                             else:
-                                error=QgsVectorFileWriter.writeAsVectorFormat(vlayer, TEMPORARY_PATH+"/Graf_"+Graf+".shp", "utf-8", vlayer.crs(), "ESRI Shapefile")
-                            vlayer = QgsVectorLayer(TEMPORARY_PATH+"/Graf_"+Graf+".shp", titol3.decode('utf8'), "ogr")
+                                error=QgsVectorFileWriter.writeAsVectorFormat(vlayer, os.environ['TMP']+"/Graf_"+Graf+".shp", "utf-8", vlayer.crs(), "ESRI Shapefile")
+                            vlayer = QgsVectorLayer(os.environ['TMP']+"/Graf_"+Graf+".shp", titol3.decode('utf8'), "ogr")
                             #self.eliminaTaulesCalcul(Fitxer)
 
                             symbols = vlayer.renderer().symbols(QgsRenderContext())
