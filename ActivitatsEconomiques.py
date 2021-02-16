@@ -2010,10 +2010,10 @@ class ActivitatsEconomiques:
             trobat = True
             while trobat:
                 if (path != ''):
-                    if (os.path.exists(path + "\\tr_illes.csv")):
+                    if (os.path.exists(path + "/tr_illes.csv")):
                         trobat = False 
                         
-                        arxiu = open(path + "\\tr_illes.csv", 'r')
+                        arxiu = open(path + "/tr_illes.csv", 'r')
                         arxiu.readline()
                         lines = arxiu.readlines()
                         try:
@@ -2042,7 +2042,7 @@ class ActivitatsEconomiques:
                         arxiuLlegit = True
                     else:
                         print ("No hi ha l'arxiu")
-                        path = QFileDialog.getExistingDirectory(self.dlg,"Busca la carpeta que conté els arxius provinents del mòdul TAULA RESUM", Path_Inicial+"\\",QFileDialog.ShowDirsOnly)
+                        path = QFileDialog.getExistingDirectory(self.dlg,"Busca la carpeta que conté els arxius provinents del mòdul TAULA RESUM", Path_Inicial+"/",QFileDialog.ShowDirsOnly)
                 else:
                     print ("Cancelat")
                     trobat = False
