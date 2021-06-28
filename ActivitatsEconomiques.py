@@ -55,6 +55,7 @@ from qgis.core import QgsProcessingFeedback, Qgis,QgsCoordinateReferenceSystem,Q
 from qgis.gui import QgsMessageBar
 from qgis.core import QgsFeature
 from qgis.core import QgsGeometry
+from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication
 
 import psycopg2
 import unicodedata
