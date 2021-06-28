@@ -86,7 +86,7 @@ micolor_ZI=None
 micolor_Graf=None
 Fitxer=""
 Path_Inicial=expanduser("~")
-Versio_modul="V_Q3.210618"
+Versio_modul="V_Q3.210628"
 progress=None
 
 class ActivitatsEconomiques:
@@ -2129,7 +2129,7 @@ class ActivitatsEconomiques:
                 
                 if vlayer.isValid():
                     NumPol=datetime.datetime.now().strftime("%Y%m%d%H%M%S%f")
-                    if (qgis.utils.Qgis.QGIS_VERSION_INT>=31000):
+                    if (qgis.utils.Qgis.QGIS_VERSION_INT>=31004):
                         save_options = QgsVectorFileWriter.SaveVectorOptions()
                         save_options.driverName = "ESRI Shapefile"
                         save_options.fileEncoding = "UTF-8"
@@ -2268,7 +2268,7 @@ class ActivitatsEconomiques:
                     vlayer = QgsVectorLayer(uri.uri(), titol3.decode('utf8'), "postgres")
                     if vlayer.isValid():
                         Tematic=datetime.datetime.now().strftime("%Y%m%d%H%M%S%f")
-                        if (qgis.utils.Qgis.QGIS_VERSION_INT>=31000):
+                        if (qgis.utils.Qgis.QGIS_VERSION_INT>=31004):
                             save_options = QgsVectorFileWriter.SaveVectorOptions()
                             save_options.driverName = "ESRI Shapefile"
                             save_options.fileEncoding = "UTF-8"
@@ -2341,7 +2341,7 @@ class ActivitatsEconomiques:
                         vlayer = QgsVectorLayer(uri.uri(), titol3.decode('utf8'), "postgres")
                         if vlayer.isValid():
                             Area=datetime.datetime.now().strftime("%Y%m%d%H%M%S%f")
-                            if (qgis.utils.Qgis.QGIS_VERSION_INT>=31000):
+                            if (qgis.utils.Qgis.QGIS_VERSION_INT>=31004):
                                 save_options = QgsVectorFileWriter.SaveVectorOptions()
                                 save_options.driverName = "ESRI Shapefile"
                                 save_options.fileEncoding = "UTF-8"
@@ -2382,7 +2382,7 @@ class ActivitatsEconomiques:
                             vlayer = QgsVectorLayer(uri.uri(), titol3.decode('utf8'), "postgres")
                         if vlayer.isValid():
                             Graf=datetime.datetime.now().strftime("%Y%m%d%H%M%S%f")
-                            if (qgis.utils.Qgis.QGIS_VERSION_INT>=31004):
+                            if (qgis.utils.Qgis.QGIS_VERSION_INT>=31004): 
                                 save_options = QgsVectorFileWriter.SaveVectorOptions()
                                 save_options.driverName = "ESRI Shapefile"
                                 save_options.fileEncoding = "UTF-8"
