@@ -87,7 +87,7 @@ micolor_ZI=None
 micolor_Graf=None
 Fitxer=""
 Path_Inicial=expanduser("~")
-Versio_modul="V_Q3.210628"
+Versio_modul="V_Q3.220712"
 progress=None
 
 class ActivitatsEconomiques:
