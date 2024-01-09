@@ -87,7 +87,7 @@ micolor_ZI=None
 micolor_Graf=None
 Fitxer=""
 Path_Inicial=expanduser("~")
-Versio_modul="V_Q3.220712"
+Versio_modul="V_Q3.240109"
 progress=None
 
 class ActivitatsEconomiques:
@@ -2253,11 +2253,11 @@ class ActivitatsEconomiques:
                     #Calcul mitjançant parceles
                
                     sql="SELECT PA.\"geom\",PACOUNT.\"numae\",PA.\"UTM\" FROM (SELECT count(BC.\"EPIGRAFIAE\") as numAE , PA.\"UTM\" FROM (select * from \"BrossaComercial\" where \"EPIGRAFIAE\" in "+where_sentence+") BC LEFT JOIN \"parcel\" PA ON (BC.\"CADASREF\" = PA.\"UTM\") WHERE (PA.\"UTM\" IS NOT NULL) AND (PA.\"UTM\"<>' ')  GROUP BY PA.\"UTM\") PACOUNT LEFT JOIN \"parcel\" PA ON (PACOUNT.\"UTM\"=PA.\"UTM\") WHERE (PACOUNT.\"numae\">0) "
-                    sql_ZI="select TOT.\"UTM\", TOT.\"Nom\" ,TOT.\"numae\",row_number() OVER () AS \"ogc_fid\",ST_Buffer(TOT.\"geom\","+self.dlg.Radi_ZI.text()+"::double precision) as the_geom from ("+sql+") TOT"
-                    sql_PART1_ZI="SELECT ILL.\"D_S_I\",ILL.\"geom\",RS.\"Habitants\" FROM (select \"ILLES\".\"D_S_I\",\"ILLES\".\"geom\" from \"ILLES\" where \"ILLES\".\"id\" NOT IN (select \"ILLES\".\"id\" from \"ILLES\" INNER JOIN ("
+                    sql_ZI="select TOT.\"UTM\",TOT.\"numae\",row_number() OVER () AS \"ogc_fid\",ST_Buffer(TOT.\"geom\","+self.dlg.Radi_ZI.text()+"::double precision) as the_geom from ("+sql+") TOT"
+                    sql_PART1_ZI="SELECT row_number() OVER () AS \"ogc_fid\",ILL.\"D_S_I\",ILL.\"geom\",RS.\"Habitants\" FROM (select \"ILLES\".\"D_S_I\",\"ILLES\".\"geom\" from \"ILLES\" where \"ILLES\".\"id\" NOT IN (select \"ILLES\".\"id\" from \"ILLES\" INNER JOIN ("
                     sql_TOTAL_ZI=sql_PART1_ZI+sql_ZI+") TOT2 on ST_Intersects(\"ILLES\".\"geom\",TOT2.\"the_geom\"))) ILL JOIN \"Resum_Temp_"+Fitxer+"\" RS on (ILL.\"D_S_I\" = RS.\"ILLES_Codificades\")"
                 
-                uri.setDataSource("","("+sql_TOTAL_ZI+")","geom","","D_S_I")
+                uri.setDataSource("","("+sql_TOTAL_ZI+")","geom","","ogc_fid")
                 if (self.dlg.RelacionarPoblacio.isChecked()):
                     titol=self.dlg.texte_3.text().replace("'","\'")
                     if (self.dlg.GrafCombo.currentText()=="Distancia" or self.dlg.ZICirc_radio.isChecked()):
