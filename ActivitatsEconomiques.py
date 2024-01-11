@@ -2129,7 +2129,9 @@ class ActivitatsEconomiques:
                 #self.retorna_nom_geometria(vlayer)
                 
                 if vlayer.isValid():
-                    vlayer_temp = QgsVectorLayer("Point?crs=epsg:25831", titol3.decode('utf8'), "memory")
+                    crs = vlayer.dataProvider().sourceCrs()
+                    vlayer_temp = QgsVectorLayer(f"Point", titol3.decode('utf8'), "memory")
+                    vlayer_temp.setCrs(crs)
                     vlayer_temp.dataProvider().addAttributes(vlayer.fields())
                     vlayer_temp.updateFields()
                     vlayer_temp.dataProvider().addFeatures(vlayer.getFeatures())
@@ -2281,7 +2283,10 @@ class ActivitatsEconomiques:
                         format.setPrecision(0)
                         format.setTrimTrailingZeroes(True)
 
-                        vlayer_temp = QgsVectorLayer("MultiPolygon?crs=epsg:25831", titol3.decode('utf8'), "memory")
+                        crs = vlayer.dataProvider().sourceCrs()
+                        
+                        vlayer_temp = QgsVectorLayer("MultiPolygon", titol3.decode('utf8'), "memory")
+                        vlayer_temp.setCrs(crs)
                         vlayer_temp.dataProvider().addAttributes(vlayer.fields())
                         vlayer_temp.updateFields()
                         vlayer_temp.dataProvider().addFeatures(vlayer.getFeatures())
@@ -2325,7 +2330,9 @@ class ActivitatsEconomiques:
                         titol3=titol2.encode('utf8','strict')+titol.encode('utf8','strict')
                         vlayer = QgsVectorLayer(uri.uri(), titol3.decode('utf8'), "postgres")
                         if vlayer.isValid():
-                            vlayer_temp = QgsVectorLayer("Polygon?crs=epsg:25831", titol3.decode('utf8'), "memory")
+                            crs = vlayer.dataProvider().sourceCrs()
+                            vlayer_temp = QgsVectorLayer("Polygon", titol3.decode('utf8'), "memory")
+                            vlayer_temp.setCrs(crs)
                             vlayer_temp.dataProvider().addAttributes(vlayer.fields())
                             vlayer_temp.updateFields()
                             vlayer_temp.dataProvider().addFeatures(vlayer.getFeatures())
@@ -2357,7 +2364,9 @@ class ActivitatsEconomiques:
                         else:
                             vlayer = QgsVectorLayer(uri.uri(), titol3.decode('utf8'), "postgres")
                         if vlayer.isValid():
-                            vlayer_temp("LineString?crs=epsg:25831", titol3.decode('utf8'), "memory")
+                            crs = vlayer.dataProvider().sourceCrs()
+                            vlayer_temp("LineString", titol3.decode('utf8'), "memory")
+                            vlayer_temp.setCrs(crs)
                             vlayer_temp.dataProvider().addAttributes(vlayer.fields())
                             vlayer_temp.updateFields()
                             vlayer_temp.dataProvider().addFeatures(vlayer.getFeatures())
