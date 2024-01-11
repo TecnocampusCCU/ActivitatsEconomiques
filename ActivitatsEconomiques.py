@@ -1984,13 +1984,13 @@ class ActivitatsEconomiques:
 
         #self.dlg.Progres.setVisible(False)
         Fitxer=datetime.datetime.now().strftime("%Y%m%d%H%M%S%f")
-        consoleWidget = iface.mainWindow().findChild( QDockWidget, 'PythonConsole' )
-        if consoleWidget is None:
-            iface.actionShowPythonDialog().trigger()
-            QApplication.processEvents()
-            consoleWidget = iface.mainWindow().findChild( QDockWidget, 'PythonConsole' )
-            consoleWidget.console.shellOut.clearConsole()
-            consoleWidget.setVisible( False )
+        #consoleWidget = iface.mainWindow().findChild( QDockWidget, 'PythonConsole' )
+        #if consoleWidget is None:
+        #    iface.actionShowPythonDialog().trigger()
+        #    QApplication.processEvents()
+        #    consoleWidget = iface.mainWindow().findChild( QDockWidget, 'PythonConsole' )
+        #    consoleWidget.console.shellOut.clearConsole()
+        #    consoleWidget.setVisible( False )
 
         arxiuLlegit = False
         self.dlg.Progres.setValue(0)
@@ -2365,7 +2365,7 @@ class ActivitatsEconomiques:
                             vlayer = QgsVectorLayer(uri.uri(), titol3.decode('utf8'), "postgres")
                         if vlayer.isValid():
                             crs = vlayer.dataProvider().sourceCrs()
-                            vlayer_temp("LineString", titol3.decode('utf8'), "memory")
+                            vlayer_temp = QgsVectorLayer("LineString", titol3.decode('utf8'), "memory")
                             vlayer_temp.setCrs(crs)
                             vlayer_temp.dataProvider().addAttributes(vlayer.fields())
                             vlayer_temp.updateFields()
