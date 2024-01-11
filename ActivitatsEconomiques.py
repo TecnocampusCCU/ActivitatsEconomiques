@@ -87,7 +87,7 @@ micolor_ZI=None
 micolor_Graf=None
 Fitxer=""
 Path_Inicial=expanduser("~")
-Versio_modul="V_Q3.240109"
+Versio_modul="V_Q3.240111"
 progress=None
 
 class ActivitatsEconomiques:
@@ -2129,27 +2129,21 @@ class ActivitatsEconomiques:
                 #self.retorna_nom_geometria(vlayer)
                 
                 if vlayer.isValid():
-                    NumPol=datetime.datetime.now().strftime("%Y%m%d%H%M%S%f")
-                    if (qgis.utils.Qgis.QGIS_VERSION_INT>=31004):
-                        save_options = QgsVectorFileWriter.SaveVectorOptions()
-                        save_options.driverName = "ESRI Shapefile"
-                        save_options.fileEncoding = "UTF-8"
-                        transform_context = QgsProject.instance().transformContext()
-                        error=QgsVectorFileWriter.writeAsVectorFormatV2(vlayer, TEMPORARY_PATH+"/NumPol_"+NumPol+".shp",transform_context,save_options)
-                    else:
-                        error=QgsVectorFileWriter.writeAsVectorFormat(vlayer, TEMPORARY_PATH+"/NumPol_"+NumPol+".shp", "utf-8", vlayer.crs(), "ESRI Shapefile")
-                    vlayer = QgsVectorLayer(TEMPORARY_PATH+"/NumPol_"+NumPol+".shp", titol3.decode('utf8'), "ogr")
-                    symbols=vlayer.renderer().symbols(QgsRenderContext())
-                    symbol=symbols[0]
+                    vlayer_temp = QgsVectorLayer("Point?crs=epsg:25831", titol3.decode('utf8'), "memory")
+                    vlayer_temp.dataProvider().addAttributes(vlayer.fields())
+                    vlayer_temp.updateFields()
+                    vlayer_temp.dataProvider().addFeatures(vlayer.getFeatures())
+                    symbols = vlayer_temp.renderer().symbols(QgsRenderContext())
+                    symbol = symbols[0]
                     symbol.setColor(self.dlg.ColorTopos.palette().color(1))
-                    QgsProject.instance().addMapLayer(vlayer,False)
+                
+                    QgsProject.instance().addMapLayer(vlayer_temp,False)
                     root = QgsProject.instance().layerTreeRoot()
-                    myLayerNode=QgsLayerTreeLayer(vlayer)
+                    myLayerNode=QgsLayerTreeLayer(vlayer_temp)
                     root.insertChildNode(0,myLayerNode)
                     myLayerNode.setCustomProperty("showFeatureCount", True)
                     
                     iface.mapCanvas().refresh()
-                    #qgis.utils.iface.legendInterface().refreshLayerSymbology(vlayer)
 
                 else:
                     QMessageBox.information(None, "LAYER ERROR 0:", "%s\n\nThe layer %s is not valid" % ("error","nom_layer"))
@@ -2268,20 +2262,8 @@ class ActivitatsEconomiques:
                     titol3=titol2.encode('utf8','strict')+titol.encode('utf8','strict')
                     vlayer = QgsVectorLayer(uri.uri(), titol3.decode('utf8'), "postgres")
                     if vlayer.isValid():
-                        Tematic=datetime.datetime.now().strftime("%Y%m%d%H%M%S%f")
-                        if (qgis.utils.Qgis.QGIS_VERSION_INT>=31004):
-                            save_options = QgsVectorFileWriter.SaveVectorOptions()
-                            save_options.driverName = "ESRI Shapefile"
-                            save_options.fileEncoding = "UTF-8"
-                            transform_context = QgsProject.instance().transformContext()
-                            error=QgsVectorFileWriter.writeAsVectorFormatV2(vlayer, TEMPORARY_PATH+"/Tematic_"+Tematic+".shp",transform_context,save_options)
-                        else:
-                            error=QgsVectorFileWriter.writeAsVectorFormat(vlayer, TEMPORARY_PATH+"/Tematic_"+Tematic+".shp", "utf-8", vlayer.crs(), "ESRI Shapefile")
-                        vlayer = QgsVectorLayer(TEMPORARY_PATH+"/Tematic_"+Tematic+".shp", titol3.decode('utf8'), "ogr")
-                        #self.eliminaTaulesCalcul(Fitxer)
                         fieldname="Habitants"
                         numberOfClasses=5
-                        myRangeList=[]
                         mysymbol=QgsFillSymbol()
                         if (self.dlg.ColorDegradat.currentText()=='Gris'):
                             colorRamp=QgsGradientColorRamp( QColor( 230, 230, 230 ), QColor( 60, 60, 60 ))
@@ -2295,22 +2277,25 @@ class ActivitatsEconomiques:
                             colorRamp=QgsGradientColorRamp( QColor( 154, 255, 154 ), QColor( 0, 154, 0 ))
                         
                         format = QgsRendererRangeLabelFormat()
-                        template = "%1 - %2 habitants"
-                        precision = 0
-                        format.setFormat(template)
-                        format.setPrecision(precision)
+                        format.setFormat("%1 - %2 habitants")
+                        format.setPrecision(0)
                         format.setTrimTrailingZeroes(True)
-                        renderer=QgsGraduatedSymbolRenderer.createRenderer(vlayer,fieldname,numberOfClasses,QgsGraduatedSymbolRenderer.Quantile,mysymbol,colorRamp)
+
+                        vlayer_temp = QgsVectorLayer("MultiPolygon?crs=epsg:25831", titol3.decode('utf8'), "memory")
+                        vlayer_temp.dataProvider().addAttributes(vlayer.fields())
+                        vlayer_temp.updateFields()
+                        vlayer_temp.dataProvider().addFeatures(vlayer.getFeatures())
+                        renderer=QgsGraduatedSymbolRenderer.createRenderer(vlayer_temp,fieldname,numberOfClasses,QgsGraduatedSymbolRenderer.Quantile,mysymbol,colorRamp)
                         renderer.setLabelFormat(format,True)
-                        vlayer.setRenderer(renderer)
+                        vlayer_temp.setRenderer(renderer)
                         
-                        QgsProject.instance().addMapLayer(vlayer,False)
+                        
+                        QgsProject.instance().addMapLayer(vlayer_temp,False)
                         root = QgsProject.instance().layerTreeRoot()
-                        myLayerNode=QgsLayerTreeLayer(vlayer)
+                        myLayerNode=QgsLayerTreeLayer(vlayer_temp)
                         root.insertChildNode(0,myLayerNode)
                         myLayerNode.setCustomProperty("showFeatureCount", True)
                         iface.mapCanvas().refresh()
-                        #qgis.utils.iface.legendInterface().refreshLayerSymbology(vlayer)
                     else:
                         QMessageBox.information(None, "LAYER ERROR 1:", "%s\n\nThe layer %s is not valid" % ("error","nom_layer"))
                 progress.setValue(70)
@@ -2335,36 +2320,26 @@ class ActivitatsEconomiques:
                             sql_total1="select TOT.\"UTM\" as \"ogc_fid\",TOT.\"numae\",ST_Buffer(TOT.\"geom\","+self.dlg.Radi_ZI.text()+"::double precision) as the_geom from ("+sql+") TOT"
                             
                         uri.setDataSource("","("+sql_total1+")","the_geom","","ogc_fid")
-                        #print(self.dlg.texte_2.text())
                         titol=self.dlg.texte_3.text().replace("'","\'")
                         titol2='Àrea influència dels números de policia amb activitat: '
                         titol3=titol2.encode('utf8','strict')+titol.encode('utf8','strict')
                         vlayer = QgsVectorLayer(uri.uri(), titol3.decode('utf8'), "postgres")
                         if vlayer.isValid():
-                            Area=datetime.datetime.now().strftime("%Y%m%d%H%M%S%f")
-                            if (qgis.utils.Qgis.QGIS_VERSION_INT>=31004):
-                                save_options = QgsVectorFileWriter.SaveVectorOptions()
-                                save_options.driverName = "ESRI Shapefile"
-                                save_options.fileEncoding = "UTF-8"
-                                transform_context = QgsProject.instance().transformContext()
-                                error=QgsVectorFileWriter.writeAsVectorFormatV2(vlayer, TEMPORARY_PATH+"/Area_"+Area+".shp", transform_context,save_options)
-                            else:
-                                error=QgsVectorFileWriter.writeAsVectorFormat(vlayer, TEMPORARY_PATH+"/Area_"+Area+".shp", "utf-8", vlayer.crs(), "ESRI Shapefile")
-                            vlayer=None
-                            vlayer = QgsVectorLayer(TEMPORARY_PATH+"/Area_"+Area+".shp", titol3.decode('utf8'), "ogr")
-                            #self.eliminaTaulesCalcul(Fitxer)
-                            symbols = vlayer.renderer().symbols(QgsRenderContext())
+                            vlayer_temp = QgsVectorLayer("Polygon?crs=epsg:25831", titol3.decode('utf8'), "memory")
+                            vlayer_temp.dataProvider().addAttributes(vlayer.fields())
+                            vlayer_temp.updateFields()
+                            vlayer_temp.dataProvider().addFeatures(vlayer.getFeatures())
+                            symbols = vlayer_temp.renderer().symbols(QgsRenderContext())
                             symbol=symbols[0]
                             symbol.setColor(self.dlg.ColorZI.palette().color(1))
                             symbol.setOpacity(self.dlg.Transparencia.value()/100)
-                            #vlayer.setOpacity(self.dlg.Transparencia.value()/100)
-                            QgsProject.instance().addMapLayer(vlayer,False)
+
+                            QgsProject.instance().addMapLayer(vlayer_temp,False)
                             root = QgsProject.instance().layerTreeRoot()
-                            myLayerNode=QgsLayerTreeLayer(vlayer)
+                            myLayerNode=QgsLayerTreeLayer(vlayer_temp)
                             root.insertChildNode(0,myLayerNode)
                             myLayerNode.setCustomProperty("showFeatureCount", True)
                             iface.mapCanvas().refresh()
-                            #qgis.utils.iface.legendInterface().refreshLayerSymbology(vlayer)
                         else:
                             QMessageBox.information(None, "LAYER ERROR 2:", "%s\n\nThe layer %s is not valid" % ("error","nom_layer"))
                     progress.setValue(90)
@@ -2382,30 +2357,21 @@ class ActivitatsEconomiques:
                         else:
                             vlayer = QgsVectorLayer(uri.uri(), titol3.decode('utf8'), "postgres")
                         if vlayer.isValid():
-                            Graf=datetime.datetime.now().strftime("%Y%m%d%H%M%S%f")
-                            if (qgis.utils.Qgis.QGIS_VERSION_INT>=31004): 
-                                save_options = QgsVectorFileWriter.SaveVectorOptions()
-                                save_options.driverName = "ESRI Shapefile"
-                                save_options.fileEncoding = "UTF-8"
-                                transform_context = QgsProject.instance().transformContext()
-                                error=QgsVectorFileWriter.writeAsVectorFormatV2(vlayer, TEMPORARY_PATH+"/Graf_"+Graf+".shp",transform_context,save_options)
-                            else:
-                                error=QgsVectorFileWriter.writeAsVectorFormat(vlayer, TEMPORARY_PATH+"/Graf_"+Graf+".shp", "utf-8", vlayer.crs(), "ESRI Shapefile")
-                            vlayer = QgsVectorLayer(TEMPORARY_PATH+"/Graf_"+Graf+".shp", titol3.decode('utf8'), "ogr")
-                            #self.eliminaTaulesCalcul(Fitxer)
-
-                            symbols = vlayer.renderer().symbols(QgsRenderContext())
+                            vlayer_temp("LineString?crs=epsg:25831", titol3.decode('utf8'), "memory")
+                            vlayer_temp.dataProvider().addAttributes(vlayer.fields())
+                            vlayer_temp.updateFields()
+                            vlayer_temp.dataProvider().addFeatures(vlayer.getFeatures())
+                            symbols = vlayer_temp.renderer().symbols(QgsRenderContext())
                             symbol=symbols[0]
                             symbol.setColor(self.dlg.ColorGraf.palette().color(1))
                             symbol.setOpacity(self.dlg.Transparencia.value()/100)
-                            #vlayer.setOpacity(self.dlg.Transparencia.value()/100)
-                            QgsProject.instance().addMapLayer(vlayer,False)
+
+                            QgsProject.instance().addMapLayer(vlayer_temp,False)
                             root = QgsProject.instance().layerTreeRoot()
-                            myLayerNode=QgsLayerTreeLayer(vlayer)
+                            myLayerNode=QgsLayerTreeLayer(vlayer_temp)
                             root.insertChildNode(0,myLayerNode)
                             myLayerNode.setCustomProperty("showFeatureCount", True)
                             iface.mapCanvas().refresh()
-                            #qgis.utils.iface.legendInterface().refreshLayerSymbology(vlayer)
                         else:
                             QMessageBox.information(None, "LAYER ERROR 3:", "%s\n\nThe layer %s is not valid" % ("error","nom_layer"))
                 progress.setValue(0)
