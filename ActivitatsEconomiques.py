@@ -87,7 +87,7 @@ micolor_ZI=None
 micolor_Graf=None
 Fitxer=""
 Path_Inicial=expanduser("~")
-Versio_modul="V_Q3.240111"
+Versio_modul="V_Q3.240306"
 progress=None
 
 class ActivitatsEconomiques:
@@ -348,7 +348,7 @@ class ActivitatsEconomiques:
         predefInList = None
         for elem in list:
             try:
-                item = QStandardItem(unicode(elem))
+                item = QStandardItem(str(elem))
             except TypeError:
                 item = QStandardItem(str(elem))
             model.appendRow(item)
@@ -381,7 +381,7 @@ class ActivitatsEconomiques:
         sql='''SELECT ST_GeometryType(%s) FROM "%s"."%s";''' % (autoGeom,schema,layer)
         query = self.db.exec_(sql)
         query.next()
-        res = unicode(query.value(0))
+        res = str(query.value(0))
         #print res
         return res
 
@@ -414,13 +414,13 @@ class ActivitatsEconomiques:
         query = self.db.exec_(sql)
         fields=[]
         while (query.next()):
-            fields.append(unicode(query.value(0)))
+            fields.append(str(query.value(0)))
         if fields==[]:
             sql="SELECT attname, typname ,relname FROM pg_attribute a JOIN pg_class c on a.attrelid = c.oid JOIN pg_type t on a.atttypid = t.oid WHERE relname = '%s' and attnum >= 1;" % layer
             #print sql
             query = self.db.exec_(sql)
             while (query.next()):
-                fields.append(unicode(query.value(0)))
+                fields.append(str(query.value(0)))
             #print fields
         return fields
     
@@ -429,7 +429,7 @@ class ActivitatsEconomiques:
         sql = "SELECT typname FROM pg_attribute a JOIN pg_class c on a.attrelid = c.oid JOIN pg_type t on a.atttypid = t.oid WHERE relname = '%s' and attname = '%s'" % (layer,field)
         query = self.db.exec_(sql)
         query.next()
-        res = unicode(query.value(0))
+        res = str(query.value(0))
         #print res
         return res
 
@@ -479,9 +479,9 @@ class ActivitatsEconomiques:
         global cur
         global conn        #Sentencia SQL
         self.dlg.ListaActivitatsDesc.clear()
-        CAMP=chr(34)+"Descripcio epigraf"+chr(34)
-        CAMP2=chr(34)+"Epigraf"+chr(34)
-        TAULA="Seccio1"
+        CAMP=chr(34)+"description"+chr(34)
+        CAMP2=chr(34)+"epigraph_code"+chr(34)
+        TAULA="epigraph"
         sql="SELECT "+CAMP+","+CAMP2+" FROM "+chr(34)+TAULA+chr(34)
         filtre=self.dlg.barraCerca.text()
         wheresql=" WHERE UPPER("+CAMP+") LIKE UPPER ('%"+filtre+"%') order by "+CAMP+";"
@@ -518,9 +518,9 @@ class ActivitatsEconomiques:
         global cur
         global conn        #Sentencia SQL
         self.dlg.ListaActivitatsEpigraf.clear()
-        CAMP=chr(34)+"Descripcio epigraf"+chr(34)
-        CAMP2=chr(34)+"Epigraf"+chr(34)
-        TAULA="Seccio1"
+        CAMP=chr(34)+"description"+chr(34)
+        CAMP2=chr(34)+"epigraph_code"+chr(34)
+        TAULA="epigraph"
         sql="SELECT "+CAMP2+","+CAMP+" FROM "+chr(34)+TAULA+chr(34)
         filtre=self.dlg.barraCerca.text()
         wheresql=" ORDER BY "+CAMP2+";"
@@ -537,8 +537,8 @@ class ActivitatsEconomiques:
             
         except:
             self.dlg.EstatConnexio.setStyleSheet('border:1px solid #000000; background-color: #ff7f7f')
-            self.dlg.EstatConnexio.setText('Error: Hi ha algun camp erroni en la taula Seccio1.')
-            self.dlg.EstatConnexio.setToolTip('Error: Hi ha algun camp erroni en la taula Seccio1.')
+            self.dlg.EstatConnexio.setText('Error: Hi ha algun camp erroni en la taula epigraph.')
+            self.dlg.EstatConnexio.setToolTip('Error: Hi ha algun camp erroni en la taula epigraph.')
             print ("I am unable to connect to the database")
         
     # Create the actions 
@@ -751,16 +751,16 @@ class ActivitatsEconomiques:
 
     def retorna_nom_geometria(self,mylayer):
         """Aquesta es una funcio auxiliar que comprova quin es el tipus de camp de geometria"""    
-        if mylayer.wkbType()==QGis.WKBPoint:
+        if mylayer.wkbType()==Qgis.WKBPoint:
             print ('Layer is a pojnt layer')
         
-        if mylayer.wkbType()==QGis.WKBLineString:
+        if mylayer.wkbType()==Qgis.WKBLineString:
             print ('Layer is a line layer')
         
-        if mylayer.wkbType()==QGis.WKBPolygon:
+        if mylayer.wkbType()==Qgis.WKBPolygon:
             print ('Layer is a polygon layer')
         
-        if mylayer.wkbType()==QGis.WKBMultiPolygon:
+        if mylayer.wkbType()==Qgis.WKBMultiPolygon:
             print ('Layer is a multi-polygon layer')
         
         if mylayer.wkbType()==100:
@@ -787,7 +787,7 @@ class ActivitatsEconomiques:
         sql_1+="CREATE local temporary TABLE \"Xarxa_Graf\" as (SELECT * FROM \"" + XarxaCarrers + "\");\n"
         if (self.dlg.GrafCombo.currentText()=="Distancia"):
             """S'aplica com a cost tant directe com invers el valor de la longitud del segment"""
-            sql_1+="UPDATE \"Xarxa_Graf\" set \"cost\"=st_length(\"the_geom\"), \"reverse_cost\"=st_length(\"the_geom\");\n"
+            sql_1+="UPDATE \"Xarxa_Graf\" set \"cost\"=st_length(\"geom\"), \"reverse_cost\"=st_length(\"geom\");\n"
         else:
             if (self.dlg.CostInvers_chk.isChecked()):
                 """S'aplica com a 'cost' el valor del camp 'cost directe', i a 'reverse_cost' el valor del camp 'cost_invers"""
@@ -798,7 +798,8 @@ class ActivitatsEconomiques:
                 #sql_1+="UPDATE \"Xarxa_Graf\" set \"cost\"=\"Cost_Directe\", \"reverse_cost\"=\"Cost_Directe\";\n"
             if (self.dlg.CostNusos.isChecked()):
                 """Es suma al camp 'cost' i a 'reverse_cost' el valor dels semafors sempre i quan estigui la opci� marcada"""
-                sql_1+="UPDATE \"Xarxa_Graf\" set \"cost\"=\"cost\"+(\"Cost_Total_Semafor_Tram\"), \"reverse_cost\"=\"reverse_cost\"+(\"Cost_Total_Semafor_Tram\");\n"
+                #sql_1+="UPDATE \"Xarxa_Graf\" set \"cost\"=\"cost\"+(\"Cost_Total_Semafor_Tram\"), \"reverse_cost\"=\"reverse_cost\"+(\"Cost_Total_Semafor_Tram\");\n"
+                sql_1+="UPDATE \"Xarxa_Graf\" set \"cost\"=\"cost\"+(\"total_cost_semaphore\"), \"reverse_cost\"=\"reverse_cost\"+(\"total_cost_semaphore\");\n"
         #print sql_1
         try:
             cur.execute(sql_1)
@@ -825,11 +826,11 @@ class ActivitatsEconomiques:
 #       *****************************************************************************************************************
 #       INICI CREACIO DE LA TAULA 'PUNTS_INTERES_TMP' QUE CONTINDRA ELS PUNTS D'INTERES PROJECTATS SOBRE EL TRAM
 #       *****************************************************************************************************************
-        geometria="the_geom"
+        geometria="geom"
         sql_1="drop table if exists punts_interes_tmp;\n"
         
         """Es crea la taula punts_interes_tmp seleccionant el centroide de la entitat seleccionada, utilizant un radi fix"""
-        sql_1+="CREATE local temporary TABLE punts_interes_tmp as (SELECT ST_Centroid(tmp.\""+geometria+"\") the_geom,tmp.\"ogc_fid\" as pid from ("+sql_buff+") tmp);\n"
+        sql_1+="CREATE local temporary TABLE punts_interes_tmp as (SELECT ST_Centroid(tmp.\""+geometria+"\") geom,tmp.\"ogc_fid\" as pid from ("+sql_buff+") tmp);\n"
             
         #sql_1+="ALTER TABLE punts_interes_tmp ADD COLUMN pid BIGSERIAL PRIMARY KEY;\n"
         sql_1+="ALTER TABLE punts_interes_tmp ADD COLUMN     x FLOAT;\n"
@@ -865,9 +866,9 @@ class ActivitatsEconomiques:
 #       INICI ASSIGNACIO DEL VALOR DEL TRAM MES PROPER AL CAMP 'EDGE_ID' DE LA TAULA 'PUNTS_INTERES_TMP I LA PROJECCIO DEL PUNT D'INTERES SOBRE EL TRAM
 #       *****************************************************************************************************************
         """S'assigna el valor del tram més proper al punt d'interes en el camp 'edge_id' de la taula 'punts_interes_tmp'"""
-        sql_1="UPDATE \"punts_interes_tmp\" set \"edge_id\"=tram_proper.\"tram_id\" from (SELECT distinct on(Poi.pid) Poi.pid As Punt_id,Sg.id as Tram_id, ST_Distance(Sg.the_geom,Poi.the_geom)  as dist FROM \"Xarxa_Graf\" as Sg,\"punts_interes_tmp\" AS Poi ORDER BY  Poi.pid,ST_Distance(Sg.the_geom,Poi.the_geom),Sg.id) tram_proper where \"punts_interes_tmp\".\"pid\"=tram_proper.\"punt_id\";\n"
+        sql_1="UPDATE \"punts_interes_tmp\" set \"edge_id\"=tram_proper.\"tram_id\" from (SELECT distinct on(Poi.pid) Poi.pid As Punt_id,Sg.id as Tram_id, ST_Distance(Sg.geom,Poi.geom)  as dist FROM \"Xarxa_Graf\" as Sg,\"punts_interes_tmp\" AS Poi ORDER BY  Poi.pid,ST_Distance(Sg.geom,Poi.geom),Sg.id) tram_proper where \"punts_interes_tmp\".\"pid\"=tram_proper.\"punt_id\";\n"
         """Es calcula la fraccio del tram que on esta situat la projecci� del punt d'interes"""
-        sql_1+="UPDATE \"punts_interes_tmp\" SET fraction = ST_LineLocatePoint(e.the_geom, \"punts_interes_tmp\".the_geom),newPoint = ST_LineInterpolatePoint(e.the_geom, ST_LineLocatePoint(e.the_geom, \"punts_interes_tmp\".the_geom)) FROM \"Xarxa_Graf\" AS e WHERE \"punts_interes_tmp\".\"edge_id\" = e.id;\n"
+        sql_1+="UPDATE \"punts_interes_tmp\" SET fraction = ST_LineLocatePoint(e.geom, \"punts_interes_tmp\".geom),newPoint = ST_LineInterpolatePoint(e.geom, ST_LineLocatePoint(e.geom, \"punts_interes_tmp\".geom)) FROM \"Xarxa_Graf\" AS e WHERE \"punts_interes_tmp\".\"edge_id\" = e.id;\n"
         #print sql_1
         try:
             cur.execute(sql_1)
@@ -971,17 +972,17 @@ class ActivitatsEconomiques:
             """Si s'ha escollit calcula mitjançant distancia """
             #sql per distancia
             """Creació de la taula que contindrà els trams que formen part del radi d'acció indicat, si el radi escollit es un radi fix"""
-            sql_1+="CREATE local temporary TABLE trams_finals_tmp as (select \"Xarxa_Graf\".\"id\",\"Xarxa_Graf\".\"the_geom\",\"geo_punts_finals_tmp\".\"id\" as node,\"geo_punts_finals_tmp\".\"agg_cost\" as coste,("+self.dlg.Radi_ZI.text()+"-\"geo_punts_finals_tmp\".\"agg_cost\") as falta,\"geo_punts_finals_tmp\".\"start_vid\" as id_punt, (select case when ("+self.dlg.Radi_ZI.text()+"-\"geo_punts_finals_tmp\".\"agg_cost\")/ST_Length(\"Xarxa_Graf\".\"the_geom\")<=1 then ("+self.dlg.Radi_ZI.text()+"-\"geo_punts_finals_tmp\".\"agg_cost\")/ST_Length(\"Xarxa_Graf\".\"the_geom\") when ("+self.dlg.Radi_ZI.text()+"-\"geo_punts_finals_tmp\".\"agg_cost\")/ST_Length(\"Xarxa_Graf\".\"the_geom\")>1 then (1) end) as fraccio from \"Xarxa_Graf\",\"geo_punts_finals_tmp\" where ST_DWithin(\"geo_punts_finals_tmp\".\"the_geom\",\"Xarxa_Graf\".\"the_geom\",1)=TRUE);\n"
+            sql_1+="CREATE local temporary TABLE trams_finals_tmp as (select \"Xarxa_Graf\".\"id\",\"Xarxa_Graf\".\"geom\",\"geo_punts_finals_tmp\".\"id\" as node,\"geo_punts_finals_tmp\".\"agg_cost\" as coste,("+self.dlg.Radi_ZI.text()+"-\"geo_punts_finals_tmp\".\"agg_cost\") as falta,\"geo_punts_finals_tmp\".\"start_vid\" as id_punt, (select case when ("+self.dlg.Radi_ZI.text()+"-\"geo_punts_finals_tmp\".\"agg_cost\")/ST_Length(\"Xarxa_Graf\".\"geom\")<=1 then ("+self.dlg.Radi_ZI.text()+"-\"geo_punts_finals_tmp\".\"agg_cost\")/ST_Length(\"Xarxa_Graf\".\"geom\") when ("+self.dlg.Radi_ZI.text()+"-\"geo_punts_finals_tmp\".\"agg_cost\")/ST_Length(\"Xarxa_Graf\".\"geom\")>1 then (1) end) as fraccio from \"Xarxa_Graf\",\"geo_punts_finals_tmp\" where ST_DWithin(\"geo_punts_finals_tmp\".\"the_geom\",\"Xarxa_Graf\".\"geom\",1)=TRUE);\n"
         else:
             """Si s'ha escollit calcula mitjançant Temps """
             if (self.dlg.CostInvers_chk.isChecked()):
                 #sql per temps i cost invers
                 """Creació de la taula que contindrà els trams que formen part del radi d'acció indicat, si el radi escollit es un radi fix"""
-                sql_1+="CREATE local temporary TABLE trams_finals_tmp as (select \"Xarxa_Graf\".\"id\",\"Xarxa_Graf\".\"cost\",\"Xarxa_Graf\".\"reverse_cost\",\"Xarxa_Graf\".\"the_geom\",\"geo_punts_finals_tmp\".\"id\" as node,\"geo_punts_finals_tmp\".\"agg_cost\" as coste,("+self.dlg.Radi_ZI.text()+"-\"geo_punts_finals_tmp\".\"agg_cost\") as falta,\"geo_punts_finals_tmp\".\"start_vid\" as id_punt, (select case when (("+self.dlg.Radi_ZI.text()+"-\"geo_punts_finals_tmp\".\"agg_cost\")/(CASE WHEN \"geo_punts_finals_tmp\".\"id\"=\"Xarxa_Graf\".\"target\" THEN \"Xarxa_Graf\".\"reverse_cost\" ELSE \"Xarxa_Graf\".\"cost\" END))<=1 then (("+self.dlg.Radi_ZI.text()+"-\"geo_punts_finals_tmp\".\"agg_cost\")/(CASE WHEN \"geo_punts_finals_tmp\".\"id\"=\"Xarxa_Graf\".\"target\" THEN \"Xarxa_Graf\".\"reverse_cost\" ELSE \"Xarxa_Graf\".\"cost\" END)) when (("+self.dlg.Radi_ZI.text()+"-\"geo_punts_finals_tmp\".\"agg_cost\")/(CASE WHEN \"geo_punts_finals_tmp\".\"id\"=\"Xarxa_Graf\".\"target\" THEN \"Xarxa_Graf\".\"reverse_cost\" ELSE \"Xarxa_Graf\".\"cost\" END))>1 then (1) end) as fraccio from \"Xarxa_Graf\",\"geo_punts_finals_tmp\" where ST_DWithin(\"geo_punts_finals_tmp\".\"the_geom\",\"Xarxa_Graf\".\"the_geom\",1)=TRUE);\n"
+                sql_1+="CREATE local temporary TABLE trams_finals_tmp as (select \"Xarxa_Graf\".\"id\",\"Xarxa_Graf\".\"cost\",\"Xarxa_Graf\".\"reverse_cost\",\"Xarxa_Graf\".\"geom\",\"geo_punts_finals_tmp\".\"id\" as node,\"geo_punts_finals_tmp\".\"agg_cost\" as coste,("+self.dlg.Radi_ZI.text()+"-\"geo_punts_finals_tmp\".\"agg_cost\") as falta,\"geo_punts_finals_tmp\".\"start_vid\" as id_punt, (select case when (("+self.dlg.Radi_ZI.text()+"-\"geo_punts_finals_tmp\".\"agg_cost\")/(CASE WHEN \"geo_punts_finals_tmp\".\"id\"=\"Xarxa_Graf\".\"target\" THEN \"Xarxa_Graf\".\"reverse_cost\" ELSE \"Xarxa_Graf\".\"cost\" END))<=1 then (("+self.dlg.Radi_ZI.text()+"-\"geo_punts_finals_tmp\".\"agg_cost\")/(CASE WHEN \"geo_punts_finals_tmp\".\"id\"=\"Xarxa_Graf\".\"target\" THEN \"Xarxa_Graf\".\"reverse_cost\" ELSE \"Xarxa_Graf\".\"cost\" END)) when (("+self.dlg.Radi_ZI.text()+"-\"geo_punts_finals_tmp\".\"agg_cost\")/(CASE WHEN \"geo_punts_finals_tmp\".\"id\"=\"Xarxa_Graf\".\"target\" THEN \"Xarxa_Graf\".\"reverse_cost\" ELSE \"Xarxa_Graf\".\"cost\" END))>1 then (1) end) as fraccio from \"Xarxa_Graf\",\"geo_punts_finals_tmp\" where ST_DWithin(\"geo_punts_finals_tmp\".\"the_geom\",\"Xarxa_Graf\".\"geom\",1)=TRUE);\n"
             else:
                 #sql per temps i sense cost invers
                 """Creació de la taula que contindrà els trams que formen part del radi d'acció indicat, si el radi escollit es un radi fix"""
-                sql_1+="CREATE local temporary TABLE trams_finals_tmp as (select \"Xarxa_Graf\".\"id\",\"Xarxa_Graf\".\"cost\",\"Xarxa_Graf\".\"reverse_cost\",\"Xarxa_Graf\".\"the_geom\",\"geo_punts_finals_tmp\".\"id\" as node,\"geo_punts_finals_tmp\".\"agg_cost\" as coste,("+self.dlg.Radi_ZI.text()+"-\"geo_punts_finals_tmp\".\"agg_cost\") as falta,\"geo_punts_finals_tmp\".\"start_vid\" as id_punt, (select case when (("+self.dlg.Radi_ZI.text()+"-\"geo_punts_finals_tmp\".\"agg_cost\")/(\"Xarxa_Graf\".\"cost\"))<=1 then (("+self.dlg.Radi_ZI.text()+"-\"geo_punts_finals_tmp\".\"agg_cost\")/(\"Xarxa_Graf\".\"cost\")) when (("+self.dlg.Radi_ZI.text()+"-\"geo_punts_finals_tmp\".\"agg_cost\")/(\"Xarxa_Graf\".\"cost\"))>1 then (1) end) as fraccio from \"Xarxa_Graf\",\"geo_punts_finals_tmp\" where ST_DWithin(\"geo_punts_finals_tmp\".\"the_geom\",\"Xarxa_Graf\".\"the_geom\",1)=TRUE);\n"
+                sql_1+="CREATE local temporary TABLE trams_finals_tmp as (select \"Xarxa_Graf\".\"id\",\"Xarxa_Graf\".\"cost\",\"Xarxa_Graf\".\"reverse_cost\",\"Xarxa_Graf\".\"geom\",\"geo_punts_finals_tmp\".\"id\" as node,\"geo_punts_finals_tmp\".\"agg_cost\" as coste,("+self.dlg.Radi_ZI.text()+"-\"geo_punts_finals_tmp\".\"agg_cost\") as falta,\"geo_punts_finals_tmp\".\"start_vid\" as id_punt, (select case when (("+self.dlg.Radi_ZI.text()+"-\"geo_punts_finals_tmp\".\"agg_cost\")/(\"Xarxa_Graf\".\"cost\"))<=1 then (("+self.dlg.Radi_ZI.text()+"-\"geo_punts_finals_tmp\".\"agg_cost\")/(\"Xarxa_Graf\".\"cost\")) when (("+self.dlg.Radi_ZI.text()+"-\"geo_punts_finals_tmp\".\"agg_cost\")/(\"Xarxa_Graf\".\"cost\"))>1 then (1) end) as fraccio from \"Xarxa_Graf\",\"geo_punts_finals_tmp\" where ST_DWithin(\"geo_punts_finals_tmp\".\"the_geom\",\"Xarxa_Graf\".\"geom\",1)=TRUE);\n"
         #print sql_1
         try:
             cur.execute(sql_1)
@@ -1020,20 +1021,20 @@ class ActivitatsEconomiques:
         sql_1+="m trams_finals_tmp%rowtype;\n"
         sql_1+="BEGIN\n"
         sql_1+="DROP TABLE IF EXISTS fraccio_trams_raw;\n"
-        sql_1+="CREATE local temporary TABLE fraccio_trams_raw (the_geom geometry, punt_id bigint,id_tram bigint,fraccio FLOAT,node bigint,fraccio_inicial FLOAT,cost_invers FLOAT,cost_directe FLOAT,target bigint,radi_inic FLOAT);\n"
+        sql_1+="CREATE local temporary TABLE fraccio_trams_raw (geom geometry, punt_id bigint,id_tram bigint,fraccio FLOAT,node bigint,fraccio_inicial FLOAT,cost_invers FLOAT,cost_directe FLOAT,target bigint,radi_inic FLOAT);\n"
         sql_1+="FOR r IN SELECT \"trams_finals_tmp\".* FROM \"trams_finals_tmp\" WHERE \"trams_finals_tmp\".\"id\" not in (select \"edge_id\" from \"punts_interes_tmp\")\n"
         sql_1+="LOOP\n"
-        sql_1+="insert into fraccio_trams_raw VALUES(ST_Line_Substring((r.\"the_geom\"),"
-        sql_1+="case when (select ST_Line_Locate_Point((r.\"the_geom\"),(select \"geo_punts_finals_tmp\".\"the_geom\" from \"geo_punts_finals_tmp\" where \"geo_punts_finals_tmp\".\"id\"=r.\"node\" and \"geo_punts_finals_tmp\".\"start_vid\"=r.\"id_punt\")))<0.001 then 0 else 1-r.\"fraccio\"\n"
+        sql_1+="insert into fraccio_trams_raw VALUES(ST_LineSubstring((r.\"geom\"),"
+        sql_1+="case when (select ST_LineLocatePoint((r.\"geom\"),(select \"geo_punts_finals_tmp\".\"the_geom\" from \"geo_punts_finals_tmp\" where \"geo_punts_finals_tmp\".\"id\"=r.\"node\" and \"geo_punts_finals_tmp\".\"start_vid\"=r.\"id_punt\")))<0.001 then 0 else 1-r.\"fraccio\"\n"
         sql_1+="END,\n"
-        sql_1+="case when (select ST_Line_Locate_Point((r.\"the_geom\"),(select \"geo_punts_finals_tmp\".\"the_geom\" from \"geo_punts_finals_tmp\" where \"geo_punts_finals_tmp\".\"id\"=r.\"node\" and \"geo_punts_finals_tmp\".\"start_vid\"=r.\"id_punt\")))<0.001 then r.\"fraccio\" else 1\n"
+        sql_1+="case when (select ST_LineLocatePoint((r.\"geom\"),(select \"geo_punts_finals_tmp\".\"the_geom\" from \"geo_punts_finals_tmp\" where \"geo_punts_finals_tmp\".\"id\"=r.\"node\" and \"geo_punts_finals_tmp\".\"start_vid\"=r.\"id_punt\")))<0.001 then r.\"fraccio\" else 1\n"
         sql_1+="END),r.\"id_punt\"*(-1),r.\"id\",0,r.\"node\",0,0,0,0);\n"
         sql_1+="RETURN NEXT r;\n"
         sql_1+="END LOOP;\n"
 
         sql_1+="FOR m IN SELECT \"trams_finals_tmp\".* FROM \"trams_finals_tmp\" WHERE \"trams_finals_tmp\".\"id\" in (select \"edge_id\" from \"punts_interes_tmp\")\n"
         sql_1+="LOOP\n"
-        sql_1+="insert into fraccio_trams_raw VALUES(m.\"the_geom\",m.\"id_punt\"*(-1),m.\"id\",0,m.\"node\",0,0,0);\n"
+        sql_1+="insert into fraccio_trams_raw VALUES(m.\"geom\",m.\"id_punt\"*(-1),m.\"id\",0,m.\"node\",0,0,0);\n"
 
         sql_1+="RETURN NEXT m;\n"
         sql_1+="END LOOP;\n"
@@ -1043,7 +1044,7 @@ class ActivitatsEconomiques:
         sql_1+="$BODY$\n"
         sql_1+="LANGUAGE 'plpgsql' ;\n"
         
-        sql_1+="SELECT \"the_geom\" FROM Cobertura();\n"
+        sql_1+="SELECT \"geom\" FROM Cobertura();\n"
 
         progress.setValue(45)
         self.dlg.Progres.setValue(45)
@@ -1166,7 +1167,7 @@ class ActivitatsEconomiques:
         if (self.dlg.GrafCombo.currentText()!="Distancia"):
             """Calcul del la fracci� final de cada tram en el cas d'haber escollit temps"""
             cost_tram="(CASE WHEN \"geo_punts_finals_tmp\".\"id\"=\"fraccio_trams_raw\".\"target\" THEN \"fraccio_trams_raw\".\"cost_invers\" ELSE \"fraccio_trams_raw\".\"cost_directe\" END)"
-            where_tram=" FROM \"geo_punts_finals_tmp\" WHERE ST_DWithin(\"geo_punts_finals_tmp\".\"the_geom\",\"fraccio_trams_raw\".\"the_geom\",1)=TRUE"
+            where_tram=" FROM \"geo_punts_finals_tmp\" WHERE ST_DWithin(\"geo_punts_finals_tmp\".\"the_geom\",\"fraccio_trams_raw\".\"geom\",1)=TRUE"
             sql_1="UPDATE \"fraccio_trams_raw\" SET \"fraccio\"=" 
 
             """ Si el radi es fix"""
@@ -1176,7 +1177,7 @@ class ActivitatsEconomiques:
             sql_1+=where_tram+";\n"
         else:
             """Calcul del la fracci� final de cada tram en el cas d'haber escollit distancia"""
-            cost_tram="ST_Length(\"fraccio_trams_raw\".\"the_geom\")"
+            cost_tram="ST_Length(\"fraccio_trams_raw\".\"geom\")"
             where_tram=""
             sql_1="UPDATE \"fraccio_trams_raw\" SET \"fraccio\"=" 
             """ Si el radi es fix"""
@@ -1216,15 +1217,15 @@ class ActivitatsEconomiques:
 #       INICI MODIFICACIO DE LA GEOMETRIA DELS TRAMS FINALS SEGONS LA FRACCIO CALCULADA 
 #       *****************************************************************************************************************
         """Es modifiquen els trams finals del trajecte segons el que falti per arribar al cost desitjat"""
-        sql_1="update \"fraccio_trams_raw\" set \"the_geom\"=final.\"the_geom\"" 
+        sql_1="update \"fraccio_trams_raw\" set \"geom\"=final.\"geom\"" 
         sql_1+="from"
-        sql_1+="(select distinct(ST_Line_Substring("
-        sql_1+="(m.\"the_geom\")"
+        sql_1+="(select distinct(ST_LineSubstring("
+        sql_1+="(m.\"geom\")"
         sql_1+=","
-        sql_1+="(case when (select ST_Line_Locate_Point((m.\"the_geom\"),(select \"the_geom\" from \"geo_punts_finals_tmp\" where \"geo_punts_finals_tmp\".\"id\"=m.\"node\" and \"geo_punts_finals_tmp\".\"start_vid\"=m.\"punt_id\"*-1)))<0.01 then 0 else 1-m.\"fraccio\" END)"
+        sql_1+="(case when (select ST_LineLocatePoint((m.\"geom\"),(select \"the_geom\" from \"geo_punts_finals_tmp\" where \"geo_punts_finals_tmp\".\"id\"=m.\"node\" and \"geo_punts_finals_tmp\".\"start_vid\"=m.\"punt_id\"*-1)))<0.01 then 0 else 1-m.\"fraccio\" END)"
         sql_1+=","
-        sql_1+="(case when (select ST_Line_Locate_Point((m.\"the_geom\"),(select \"the_geom\" from \"geo_punts_finals_tmp\" where \"geo_punts_finals_tmp\".\"id\"=m.\"node\" and \"geo_punts_finals_tmp\".\"start_vid\"=m.\"punt_id\"*-1)))<0.01 then m.\"fraccio\" else 1 END)"
-        sql_1+="))  the_geom"
+        sql_1+="(case when (select ST_LineLocatePoint((m.\"geom\"),(select \"the_geom\" from \"geo_punts_finals_tmp\" where \"geo_punts_finals_tmp\".\"id\"=m.\"node\" and \"geo_punts_finals_tmp\".\"start_vid\"=m.\"punt_id\"*-1)))<0.01 then m.\"fraccio\" else 1 END)"
+        sql_1+="))  geom"
         sql_1+=","
         sql_1+="m.\"id_tram\""
         sql_1+="from \"fraccio_trams_raw\" m "
@@ -1264,7 +1265,7 @@ class ActivitatsEconomiques:
 #       INICI INSERTAR ELS TRAMS INICIALS DELS QUE PARTIRA EL GRAF 
 #       *****************************************************************************************************************
         """S'afegeixen els trams inicials de cada graf per modificarlos posteriorment"""
-        sql_1="insert into \"fraccio_trams_raw\" (select SX.\"the_geom\",PI.\"pid\" as punt_id,SX.\"id\"as id_tram,999 as fraccio,SX.\"source\" as node,PI.\"fraction\" as fraccio_inicial,SX.\"cost\",SX.\"reverse_cost\" from \"Xarxa_Graf\" SX inner join (Select \"edge_id\",(\"pid\"::integer) as pid,\"fraction\" from \"punts_interes_tmp\") PI on SX.\"id\"=PI.\"edge_id\");\n"
+        sql_1="insert into \"fraccio_trams_raw\" (select SX.\"geom\",PI.\"pid\" as punt_id,SX.\"id\"as id_tram,999 as fraccio,SX.\"source\" as node,PI.\"fraction\" as fraccio_inicial,SX.\"cost\",SX.\"reverse_cost\" from \"Xarxa_Graf\" SX inner join (Select \"edge_id\",(\"pid\"::integer) as pid,\"fraction\" from \"punts_interes_tmp\") PI on SX.\"id\"=PI.\"edge_id\");\n"
         #print (sql_1)
         try:
             cur.execute(sql_1)
@@ -1299,35 +1300,35 @@ class ActivitatsEconomiques:
             """ Calcul amb distancia i radi variable"""
 
             """ Calcul amb distancia i radi fix"""
-            cost_tram="ST_Length(SXI.\"the_geom\")"
-            sql_1="UPDATE \"fraccio_trams_raw\" set \"the_geom\"=final.\"the_geom\" from (select ST_Line_Substring((SXI.\"the_geom\"),"
+            cost_tram="ST_Length(SXI.\"geom\")"
+            sql_1="UPDATE \"fraccio_trams_raw\" set \"geom\"=final.\"geom\" from (select ST_LineSubstring((SXI.\"geom\"),"
             sql_1+="(case when (FT.\"fraccio_inicial\"-("+self.dlg.Radi_ZI.text()+"/"+cost_tram+"))>0 then (FT.\"fraccio_inicial\"-("+self.dlg.Radi_ZI.text()+"/"+cost_tram+")) else 0 end)"
             sql_1+=","
             sql_1+="(case when (FT.\"fraccio_inicial\"+("+self.dlg.Radi_ZI.text()+"/"+cost_tram+"))<1 then (FT.\"fraccio_inicial\"+("+self.dlg.Radi_ZI.text()+"/"+cost_tram+")) else 1 end)"
-            sql_1+=") as the_geom, FT.\"punt_id\",FT.\"id_tram\",FT.\"fraccio\" "
-            sql_1+="from \"fraccio_trams_raw\"FT inner join (select SX.\"the_geom\" as the_geom,SX.\"id\" as tram_xarxa from \"Xarxa_Graf\" SX, \"punts_interes_tmp\" PI where SX.\"id\"=PI.\"edge_id\") SXI on FT.\"id_tram\"=SXI.tram_xarxa where FT.\"fraccio\"=999) final"
-            #sql_1+="from \"fraccio_trams_raw\"FT inner join (select SX.\"the_geom\" as the_geom,SX.\"id\" as tram_xarxa from \"SegmentsXarxaCarrers\" SX, \"punts_interes_tmp\" PI where SX.\"id\"=PI.\"edge_id\") SXI on FT.\"id_tram\"=SXI.tram_xarxa where FT.\"fraccio\"=999) final"
+            sql_1+=") as geom, FT.\"punt_id\",FT.\"id_tram\",FT.\"fraccio\" "
+            sql_1+="from \"fraccio_trams_raw\"FT inner join (select SX.\"geom\" as geom,SX.\"id\" as tram_xarxa from \"Xarxa_Graf\" SX, \"punts_interes_tmp\" PI where SX.\"id\"=PI.\"edge_id\") SXI on FT.\"id_tram\"=SXI.tram_xarxa where FT.\"fraccio\"=999) final"
+            #sql_1+="from \"fraccio_trams_raw\"FT inner join (select SX.\"geom\" as geom,SX.\"id\" as tram_xarxa from \"SegmentsXarxaCarrers\" SX, \"punts_interes_tmp\" PI where SX.\"id\"=PI.\"edge_id\") SXI on FT.\"id_tram\"=SXI.tram_xarxa where FT.\"fraccio\"=999) final"
             sql_1+=" where \"fraccio_trams_raw\".\"punt_id\"=final.\"punt_id\" and \"fraccio_trams_raw\".\"fraccio\"=999;\n"
         else:
             """ Calcul amb temps i radi variable"""
             
             """ Calcul amb temps i radi fix"""
-            sql_1="UPDATE \"fraccio_trams_raw\" set \"the_geom\"=final.\"the_geom\" from "
-            sql_1+="(select ST_Union(TOT.the_geom) the_geom,TOT.\"punt_id\" from (select ST_Line_Substring((SXI.\"the_geom\"),"
+            sql_1="UPDATE \"fraccio_trams_raw\" set \"geom\"=final.\"geom\" from "
+            sql_1+="(select ST_Union(TOT.geom) geom,TOT.\"punt_id\" from (select ST_LineSubstring((SXI.\"geom\"),"
             sql_1+="(case when (FT.\"fraccio_inicial\"-("+self.dlg.Radi_ZI.text()+"/(FT.\"cost_invers\")))>0 then (FT.\"fraccio_inicial\"-("+self.dlg.Radi_ZI.text()+"/(FT.\"cost_invers\"))) else 0 end)"
             sql_1+=","
             sql_1+="FT.\"fraccio_inicial\""
-            sql_1+=") as the_geom, FT.\"punt_id\" "
-            sql_1+="from \"fraccio_trams_raw\"FT inner join (select SX.\"the_geom\" as the_geom,SX.\"id\" as tram_xarxa from \"Xarxa_Graf\" SX, \"punts_interes_tmp\" PI where SX.\"id\"=PI.\"edge_id\") SXI on FT.\"id_tram\"=SXI.tram_xarxa where FT.\"fraccio\"=999"
-            #sql_1+="from \"fraccio_trams_raw\"FT inner join (select SX.\"the_geom\" as the_geom,SX.\"id\" as tram_xarxa from \"SegmentsXarxaCarrers\" SX, \"punts_interes_tmp\" PI where SX.\"id\"=PI.\"edge_id\") SXI on FT.\"id_tram\"=SXI.tram_xarxa where FT.\"fraccio\"=999"
+            sql_1+=") as geom, FT.\"punt_id\" "
+            sql_1+="from \"fraccio_trams_raw\"FT inner join (select SX.\"geom\" as geom,SX.\"id\" as tram_xarxa from \"Xarxa_Graf\" SX, \"punts_interes_tmp\" PI where SX.\"id\"=PI.\"edge_id\") SXI on FT.\"id_tram\"=SXI.tram_xarxa where FT.\"fraccio\"=999"
+            #sql_1+="from \"fraccio_trams_raw\"FT inner join (select SX.\"geom\" as geom,SX.\"id\" as tram_xarxa from \"SegmentsXarxaCarrers\" SX, \"punts_interes_tmp\" PI where SX.\"id\"=PI.\"edge_id\") SXI on FT.\"id_tram\"=SXI.tram_xarxa where FT.\"fraccio\"=999"
             sql_1+="UNION "
-            sql_1+="select ST_Line_Substring((SXI.\"the_geom\"),"
+            sql_1+="select ST_LineSubstring((SXI.\"geom\"),"
             sql_1+="FT.\"fraccio_inicial\""
             sql_1+=","
             sql_1+="(case when (FT.\"fraccio_inicial\"+("+self.dlg.Radi_ZI.text()+"/(FT.\"cost_directe\")))<1 then (FT.\"fraccio_inicial\"+("+self.dlg.Radi_ZI.text()+"/(FT.\"cost_directe\"))) else 1 end)"
-            sql_1+=") as the_geom, FT.\"punt_id\" "
-            sql_1+="from \"fraccio_trams_raw\"FT inner join (select SX.\"the_geom\" as the_geom,SX.\"id\" as tram_xarxa from \"Xarxa_Graf\" SX, \"punts_interes_tmp\" PI where SX.\"id\"=PI.\"edge_id\") SXI on FT.\"id_tram\"=SXI.tram_xarxa where FT.\"fraccio\"=999) TOT GROUP BY TOT.\"punt_id\") final"
-            #sql_1+="from \"fraccio_trams_raw\"FT inner join (select SX.\"the_geom\" as the_geom,SX.\"id\" as tram_xarxa from \"SegmentsXarxaCarrers\" SX, \"punts_interes_tmp\" PI where SX.\"id\"=PI.\"edge_id\") SXI on FT.\"id_tram\"=SXI.tram_xarxa where FT.\"fraccio\"=999) TOT GROUP BY TOT.\"punt_id\") final"
+            sql_1+=") as geom, FT.\"punt_id\" "
+            sql_1+="from \"fraccio_trams_raw\"FT inner join (select SX.\"geom\" as geom,SX.\"id\" as tram_xarxa from \"Xarxa_Graf\" SX, \"punts_interes_tmp\" PI where SX.\"id\"=PI.\"edge_id\") SXI on FT.\"id_tram\"=SXI.tram_xarxa where FT.\"fraccio\"=999) TOT GROUP BY TOT.\"punt_id\") final"
+            #sql_1+="from \"fraccio_trams_raw\"FT inner join (select SX.\"geom\" as geom,SX.\"id\" as tram_xarxa from \"SegmentsXarxaCarrers\" SX, \"punts_interes_tmp\" PI where SX.\"id\"=PI.\"edge_id\") SXI on FT.\"id_tram\"=SXI.tram_xarxa where FT.\"fraccio\"=999) TOT GROUP BY TOT.\"punt_id\") final"
             sql_1+=" where \"fraccio_trams_raw\".\"punt_id\"=final.\"punt_id\" and \"fraccio_trams_raw\".\"fraccio\"=999;\n"
         
         try:
@@ -1363,7 +1364,7 @@ class ActivitatsEconomiques:
         sql_1="DROP TABLE IF EXISTS fraccio_trams_tmp;\n"
 
         """Eliminaci� de trams duplicats"""
-        sql_1+="CREATE local temporary TABLE fraccio_trams_tmp AS (select distinct(the_geom),punt_id,radi_inic from fraccio_trams_raw);\n"
+        sql_1+="CREATE local temporary TABLE fraccio_trams_tmp AS (select distinct(geom),punt_id,radi_inic from fraccio_trams_raw);\n"
         
         try:
             cur.execute(sql_1)
@@ -1396,7 +1397,7 @@ class ActivitatsEconomiques:
 #       *****************************************************************************************************************
         """ Es fa la uni� de tots els trams des del servidor POSTGRES dins de la taula Graf_utilitzat_(data)"""
         sql_1="drop table if exists Graf_utilitzat_"+Fitxer+";\n"
-        sql_1+="CREATE TABLE Graf_utilitzat_"+Fitxer+" AS (Select ST_Union(TOT.the_geom) the_geom, TOT.\"punt_id\" as id from (select the_geom,punt_id,radi_inic from fraccio_trams_tmp) TOT group by TOT.\"punt_id\");\n"
+        sql_1+="CREATE TABLE Graf_utilitzat_"+Fitxer+" AS (Select ST_Union(TOT.geom) geom, TOT.\"punt_id\" as id from (select geom,punt_id,radi_inic from fraccio_trams_tmp) TOT group by TOT.\"punt_id\");\n"
         try:
             cur.execute(sql_1)
             conn.commit()
@@ -1426,8 +1427,8 @@ class ActivitatsEconomiques:
 #       *****************************************************************************************************************
 #       INICI CREACIO TAULA BUFFER_FINAL_(DATA) QUE CONTINDRA EL BUFFER DE LA UNIO DELS TRAMS 
 #       *****************************************************************************************************************
-        sql_1+="drop table if exists Buffer_Final_"+Fitxer+";\n"
-        sql_1+="CREATE TABLE Buffer_Final_"+Fitxer+" AS (Select ST_Union(TOT.the_geom) the_geom, TOT.\"punt_id\" from (Select ST_Buffer(the_geom,"+self.dlg.Radi_ZI_3.text()+") the_geom,punt_id from fraccio_trams_tmp)TOT group by TOT.\"punt_id\");\n"
+        sql_1+="drop table if exists \"Buffer_Final_"+Fitxer+"\";\n"
+        sql_1+="CREATE TABLE \"Buffer_Final_"+Fitxer+"\" AS (Select ST_Union(TOT.geom) geom, TOT.\"punt_id\" from (Select ST_Buffer(geom,"+self.dlg.Radi_ZI_3.text()+") geom,punt_id from fraccio_trams_tmp)TOT group by TOT.\"punt_id\");\n"
             
         try:
             cur.execute(sql_1)
@@ -1459,7 +1460,7 @@ class ActivitatsEconomiques:
                 sql_1="drop table if exists Graf_utilitzat_"+Fitxer+";\n"
                 cur.execute(sql_1)
                 conn.commit()
-            sql_total="SELECT * FROM Buffer_Final_"+Fitxer
+            sql_total="SELECT * FROM \"Buffer_Final_"+Fitxer+"\""
             return sql_total
         except Exception as ex:
             print ("Error DROP Graf_utilitzat")
@@ -1480,19 +1481,21 @@ class ActivitatsEconomiques:
     
     def calcul_graf2(self,sql_punts,sql_xarxa,uri2):
         #               *****************************************************************************************************************
-        #               INICI CARREGA DE LES ILLES, PARCELES O PORTALS QUE QUEDEN AFECTATS PEL BUFFER DEL GRAF 
+        #               INICI CARREGA DE LES zone, PARCELES O PORTALS QUE QUEDEN AFECTATS PEL BUFFER DEL GRAF 
         #               *****************************************************************************************************************
         #                uri.setDataSource("","("+sql_total+")","geom","","id")
+        
         QApplication.processEvents()
         uri2.setDataSource("","("+sql_punts+")","geom","","id")
         QApplication.processEvents()
         punts_lyr = QgsVectorLayer(uri2.uri(False), "punts", "postgres")
         QApplication.processEvents()
-        uri2.setDataSource("","("+sql_xarxa+")","the_geom","","id")
+        uri2.setDataSource("","("+sql_xarxa+")","geom","","id")
         QApplication.processEvents()
         network_lyr = QgsVectorLayer(uri2.uri(False), "xarxa", "postgres")
         QApplication.processEvents()
         #if (punts_lyr.isValid() and network_lyr.isValid()):
+
         parameters = {'INPUT': network_lyr,
                       'START_POINTS': punts_lyr,
                       'STRATEGY': 0,
@@ -1515,7 +1518,6 @@ class ActivitatsEconomiques:
         result_dissolve = processing.run('native:dissolve', {"INPUT": linias_graf['OUTPUT_LINES'],
                                                              "FIELD": 'id',
                                                              "OUTPUT": 'memory:'})        
-
         result_singleparts = processing.run('native:multiparttosingleparts', {"INPUT": linias_graf['OUTPUT_LINES'],
                                                                               "OUTPUT": 'memory:'})
         result_buffer = processing.run('native:buffer', {"INPUT": result_singleparts['OUTPUT'],
@@ -1527,15 +1529,10 @@ class ActivitatsEconomiques:
                                                          "DISSOLVE":0,
                                                          "OUTPUT": 'memory:'})
                                                          #"OUTPUT": 'postgres: table="public"."testpep" (geom) '+uri2.connectionInfo()})
-        
         result_buffer_dissolve = processing.run('native:dissolve', {"INPUT": result_buffer['OUTPUT'],
                                                                     "FIELD": 'id',
                                                                     "OUTPUT": 'memory:'})
-        
-        buffer_dissolved = processing.run('native:dissolve', {"INPUT": result_buffer['OUTPUT'],
-                                                             "OUTPUT": 'memory:'})        
-        
-        return result_buffer_dissolve,result_dissolve,buffer_dissolved
+        return result_buffer_dissolve,result_dissolve
 
     
     def troba_distancia(self,linea,punt):
@@ -1572,7 +1569,7 @@ class ActivitatsEconomiques:
             # VEL_PS=0
             alg_params = {
                 'FIELD_LENGTH': 10,
-                'FIELD_NAME': 'VELOCITAT_PS',
+                'FIELD_NAME': 'speed',
                 'FIELD_PRECISION': 9,
                 'FIELD_TYPE': 0,
                 'FORMULA': '0*0',
@@ -1585,7 +1582,7 @@ class ActivitatsEconomiques:
             # VEL_PS_INV=0
             alg_params = {
                 'FIELD_LENGTH': 10,
-                'FIELD_NAME': 'VELOCITAT_PS_INV',
+                'FIELD_NAME': 'reverse_speed',
                 'FIELD_PRECISION': 9,
                 'FIELD_TYPE': 0,
                 'FORMULA': '0*0',
@@ -1601,7 +1598,7 @@ class ActivitatsEconomiques:
                 'FIELD_NAME': 'VEL_KMH',
                 'FIELD_PRECISION': 9,
                 'FIELD_TYPE': 0,
-                'FORMULA': '\"VELOCITAT_PS_INV\"*60/1000',
+                'FORMULA': '\"reverse_speed\"*60/1000',
                 'INPUT': outputs['Vel_ps0']['OUTPUT'],
                 'NEW_FIELD': False,
                 'OUTPUT': 'memory:'
@@ -1614,7 +1611,7 @@ class ActivitatsEconomiques:
                 'FIELD_NAME': 'VEL_KMH',
                 'FIELD_PRECISION': 9,
                 'FIELD_TYPE': 0,
-                'FORMULA': 'VELOCITAT_PS*60/1000',
+                'FORMULA': 'speed*60/1000',
                 'INPUT': outputs['Vel_ps_inv0']['OUTPUT'],
                 'NEW_FIELD': True,
                 'OUTPUT': 'memory:'
@@ -1625,7 +1622,7 @@ class ActivitatsEconomiques:
             # VEL_PS=0
             alg_params = {
                 'FIELD_LENGTH': 10,
-                'FIELD_NAME': 'VELOCITAT_PS_INV',
+                'FIELD_NAME': 'reverse_speed',
                 'FIELD_PRECISION': 9,
                 'FIELD_TYPE': 0,
                 'FORMULA': '0*0',
@@ -1638,7 +1635,7 @@ class ActivitatsEconomiques:
             # VEL_PS_INV=0
             alg_params = {
                 'FIELD_LENGTH': 10,
-                'FIELD_NAME': 'VELOCITAT_PS_INV',
+                'FIELD_NAME': 'reverse_speed',
                 'FIELD_PRECISION': 9,
                 'FIELD_TYPE': 0,
                 'FORMULA': '0*0',
@@ -1654,7 +1651,7 @@ class ActivitatsEconomiques:
                 'FIELD_NAME': 'VEL_KMH',
                 'FIELD_PRECISION': 9,
                 'FIELD_TYPE': 0,
-                'FORMULA': '\"VELOCITAT_PS\"*60/1000',
+                'FORMULA': '\"speed\"*60/1000',
                 'INPUT': outputs['Vel_ps0']['OUTPUT'],
                 'NEW_FIELD': False,
                 'OUTPUT': 'memory:'
@@ -1667,7 +1664,7 @@ class ActivitatsEconomiques:
                 'FIELD_NAME': 'VEL_KMH',
                 'FIELD_PRECISION': 9,
                 'FIELD_TYPE': 0,
-                'FORMULA': 'VELOCITAT_PS*60/1000',
+                'FORMULA': 'speed*60/1000',
                 'INPUT': outputs['Vel_ps_inv0']['OUTPUT'],
                 'NEW_FIELD': True,
                 'OUTPUT': 'memory:'
@@ -1714,7 +1711,7 @@ class ActivitatsEconomiques:
     
     def calcul_graf3(self,sql_punts,sql_xarxa,uri2):
         #               *****************************************************************************************************************
-        #               INICI CARREGA DE LES ILLES, PARCELES O PORTALS QUE QUEDEN AFECTATS PEL BUFFER DEL GRAF 
+        #               INICI CARREGA DE LES zone, PARCELES O PORTALS QUE QUEDEN AFECTATS PEL BUFFER DEL GRAF 
         #               *****************************************************************************************************************
         #                uri.setDataSource("","("+sql_total+")","geom","","id")
         global Fitxer
@@ -1723,7 +1720,7 @@ class ActivitatsEconomiques:
         QApplication.processEvents()
         punts_lyr = QgsVectorLayer(uri2.uri(False), "punts", "postgres")
         QApplication.processEvents()
-        uri2.setDataSource("","("+sql_xarxa+")","the_geom","","id")
+        uri2.setDataSource("","("+sql_xarxa+")","geom","","id")
         QApplication.processEvents()
         network_lyr = QgsVectorLayer(uri2.uri(False), "xarxa", "postgres")
         QApplication.processEvents()
@@ -1869,7 +1866,6 @@ class ActivitatsEconomiques:
                 feats.append(feat_item)
         pr.addFeatures(feats)
         vl.updateExtents()
-        #QgsProject.instance().addMapLayer(vl)
         #outputs={}
         
         if (self.dlg.CostNusos.isChecked()):
@@ -1881,7 +1877,7 @@ class ActivitatsEconomiques:
                 'FIELD_NAME': 'VEL_KMH',
                 'FIELD_PRECISION': 9,
                 'FIELD_TYPE': 0,
-                'FORMULA': '($length /(($length/((\"VELOCITAT_PS\"+\"VELOCITAT_PS_INV\")))+(\"Cost_Total_Semafor_Tram\"*($length/\"L_TRAM_TEMP\"))))*60/1000',
+                'FORMULA': '($length /(($length/((\"speed\"+\"reverse_speed\")))+(\"total_cost_semaphore\"*($length/\"L_TRAM_TEMP\"))))*60/1000',
                 'INPUT': vl,
                 'NEW_FIELD': False,
                 'OUTPUT': 'memory:'
@@ -1949,12 +1945,9 @@ class ActivitatsEconomiques:
         
         result_buffer_dissolve = processing.run('native:dissolve', {"INPUT": result_buffer['OUTPUT'],
                                                                     "FIELD": 'id',
-                                                                    "OUTPUT": 'memory:'})
+                                                                    "OUTPUT": 'memory:'})    
         
-        buffer_dissolved = processing.run('native:dissolve', {"INPUT": result_buffer['OUTPUT'],
-                                                             "OUTPUT": 'memory:'})        
-        
-        return result_buffer_dissolve,result_dissolve,buffer_dissolved
+        return result_buffer_dissolve,result_dissolve
     
   
     
@@ -2092,17 +2085,17 @@ class ActivitatsEconomiques:
                 where_sentence=where_sentence[:-1]+")"
                 #print where_sentence
                 if (self.dlg.topo.isChecked()):
-                    sql="SELECT BC.\"id\",BC.\"FULLNAME\" AS \"Nom\",BC.\"EPIGRAFIAE\",DI.\"Carrer_Num_Bis\",DI.\"REF_CADAST\",DI.\"geom\",BC.\"NumPol\",BC.\"METRES2\",("+self.dlg.texte_2.text()+"*SQRT(BC.\"METRES2\"/ PI())) AS RADI FROM (select * from \"BrossaComercial\" "
-                    wheresql="where \"EPIGRAFIAE\" in "+where_sentence+") BC LEFT JOIN \"dintreilla\" DI ON (BC.\"NumPol\" = DI.\"Carrer_Num_Bis\")"
+                    sql="SELECT distinct on (id_company) BC.\"id_company\",BC.\"name\",BC.\"epigraph\",DI.\"designator\" AS \"di_designator\",DI.\"cadastral_reference\",DI.\"geom\",BC.\"designator\" AS \"bc_designator\",BC.\"area_value\",("+self.dlg.texte_2.text()+"*SQRT(BC.\"area_value\"/ PI())) AS RADI FROM (select * from \"company\" "
+                    wheresql="where \"epigraph\" in "+where_sentence+") BC LEFT JOIN \"address\" DI ON (BC.\"designator\" = DI.\"designator\")"
                     if (self.dlg.Mostra_punt_chk.isChecked()):
-                        sql_total="select TOT.\"EPIGRAFIAE\", TOT.\"Nom\",TOT.\"Carrer_Num_Bis\",TOT.\"REF_CADAST\",TOT.\"NumPol\",TOT.\"METRES2\",TOT.\"radi\",TOT.\"id\" AS \"ogc_fid\",TOT.\"geom\" AS the_geom from ("+sql+wheresql+") TOT"
+                        sql_total="select distinct on (id_company) row_number() OVER () AS \"ogc_fid\", TOT.\"epigraph\", TOT.\"name\",TOT.\"di_designator\",TOT.\"cadastral_reference\",TOT.\"bc_designator\",TOT.\"area_value\",TOT.\"radi\",TOT.\"id_company\",TOT.\"geom\" AS geom from ("+sql+wheresql+") TOT"
                     else:
-                        sql_total="select TOT.\"EPIGRAFIAE\", TOT.\"Nom\",TOT.\"Carrer_Num_Bis\",TOT.\"REF_CADAST\",TOT.\"NumPol\",TOT.\"METRES2\",TOT.\"radi\",TOT.\"id\" AS \"ogc_fid\",ST_Buffer(TOT.\"geom\",TOT.\"radi\"::double precision) AS the_geom from ("+sql+wheresql+") TOT"
+                        sql_total="select distinct on (id_company) row_number() OVER () AS \"ogc_fid\", TOT.\"epigraph\", TOT.\"name\",TOT.\"di_designator\",TOT.\"cadastral_reference\",TOT.\"bc_designator\",TOT.\"area_value\",TOT.\"radi\",TOT.\"id_company\",ST_Buffer(TOT.\"geom\",TOT.\"radi\"::double precision) AS geom from ("+sql+wheresql+") TOT"
                     
-                    sql_total_graf2="select TOT.\"EPIGRAFIAE\", TOT.\"Nom\",TOT.\"Carrer_Num_Bis\",TOT.\"REF_CADAST\",TOT.\"NumPol\",TOT.\"METRES2\",TOT.\"radi\",TOT.\"id\" AS \"id\",TOT.\"geom\" AS geom from ("+sql+wheresql+") TOT"
+                    sql_total_graf2="select distinct on (id) TOT.\"epigraph\", TOT.\"name\",TOT.\"di_designator\",TOT.\"cadastral_reference\",TOT.\"bc_designator\",TOT.\"area_value\",TOT.\"radi\",TOT.\"id_company\" AS \"id\",TOT.\"geom\" AS geom from ("+sql+wheresql+") TOT"
                 else:
-                    sql="SELECT PA.\"geom\",PACOUNT.\"numae\",PA.\"UTM\" FROM (SELECT count(BC.\"EPIGRAFIAE\") as numAE , PA.\"UTM\" FROM (select * from \"BrossaComercial\" where \"EPIGRAFIAE\" in "+where_sentence+") BC LEFT JOIN \"parcel\" PA ON (BC.\"CADASREF\" = PA.\"UTM\") WHERE (PA.\"UTM\" IS NOT NULL) AND (PA.\"UTM\"<>' ')  GROUP BY PA.\"UTM\") PACOUNT LEFT JOIN \"parcel\" PA ON (PACOUNT.\"UTM\"=PA.\"UTM\") WHERE (PACOUNT.\"numae\">0) "
-                    sql_total="select TOT.\"UTM\" AS \"ogc_fid\",TOT.\"numae\",TOT.\"geom\" as the_geom from ("+sql+") TOT"
+                    sql="SELECT PA.\"geom\",PACOUNT.\"numae\",PA.\"cadastral_reference\", PACOUNT.\"id\" FROM (SELECT count(BC.\"epigraph\") as numAE , PA.\"cadastral_reference\", BC.\"id_company\" as id FROM (select * from \"company\" where \"epigraph\" in "+where_sentence+") BC LEFT JOIN \"parcel\" PA ON (BC.\"cadastral_reference\" = PA.\"cadastral_reference\") WHERE (PA.\"cadastral_reference\" IS NOT NULL) AND (PA.\"cadastral_reference\"<>' ')  GROUP BY PA.\"cadastral_reference\") PACOUNT LEFT JOIN \"parcel\" PA ON (PACOUNT.\"cadastral_reference\"=PA.\"cadastral_reference\") WHERE (PACOUNT.\"numae\">0) "
+                    sql_total="select distinct on (id) row_number() OVER () AS \"ogc_fid\", TOT.\"cadastral_reference\",TOT.\"numae\",TOT.\"geom\", TOT.\"id\" as geom from ("+sql+") TOT"
                     
                 uri = QgsDataSourceUri()
                 try:
@@ -2120,7 +2113,7 @@ class ActivitatsEconomiques:
                             self.eliminaTaulesCalcul(Fitxer)
                             self.dlg.setEnabled(True)
                             return
-                uri.setDataSource("","("+sql_total+")","the_geom","","ogc_fid")
+                uri.setDataSource("","("+sql_total+")","geom","","ogc_fid")
                 titol=self.dlg.texte_3.text().replace("'","\'")
                 titol2="Número de policia amb activitat: "
                 titol3=titol2.encode('utf8','strict')+titol.encode('utf8','strict')
@@ -2165,61 +2158,61 @@ class ActivitatsEconomiques:
                         if (self.dlg.chk_calc_local.isChecked() and self.dlg.ZIGraf_radio.isChecked()):
                             if (self.dlg.GrafCombo.currentText()=="Distancia"):
                                 sql_xarxa="SELECT * FROM \""+self.dlg.comboGraf.currentText()+"\""
-                                buffer_resultat,graf_resultat,buffer_dissolved=self.calcul_graf2(sql_total_graf2,sql_xarxa,uri)
+                                buffer_resultat,graf_resultat=self.calcul_graf2(sql_total_graf2,sql_xarxa,uri)
                                 vlayer=buffer_resultat['OUTPUT']
                                 vlayer_graf=graf_resultat['OUTPUT']
             
                                 #uri = "dbname='test' host=localhost port=5432 user='user' password='password' key=gid type=POINT table=\"public\".\"test\" (geom) sql="
                                 # layer - QGIS vector layer
-                                error = QgsVectorLayerExporter.exportLayer(vlayer, 'table="public"."buffer_final_'+Fitxer+'" (the_geom) '+uri.connectionInfo(), "postgres", vlayer.crs(), False)
+                                error = QgsVectorLayerExporter.exportLayer(vlayer, 'table="public"."Buffer_Final_'+Fitxer+'" (geom) '+uri.connectionInfo(), "postgres", vlayer.crs(), False)
                                 if error[0] != 0:
                                     iface.messageBar().pushMessage(u'Error', error[1])
                                     
-                                #error = QgsVectorLayerExporter.exportLayer(buffer_dissolved['OUTPUT'], 'table="public"."buffer_diss_'+Fitxer+'" (the_geom) '+uri.connectionInfo(), "postgres", vlayer.crs(), False)
+                                #error = QgsVectorLayerExporter.exportLayer(buffer_dissolved['OUTPUT'], 'table="public"."buffer_diss_'+Fitxer+'" (geom) '+uri.connectionInfo(), "postgres", vlayer.crs(), False)
                                 #if error[0] != 0:
                                 #    iface.messageBar().pushMessage(u'Error', error[1])
                                     
-                                sql_buffer="SELECT * FROM \"buffer_final_"+Fitxer+"\""
+                                sql_buffer="SELECT * FROM \"Buffer_Final_"+Fitxer+"\""
                             else:
                                 sql_xarxa="SELECT * FROM \""+self.dlg.comboGraf.currentText()+"\""
-                                buffer_resultat,graf_resultat,buffer_dissolved=self.calcul_graf3(sql_total_graf2,sql_xarxa,uri)
+                                buffer_resultat,graf_resultat=self.calcul_graf3(sql_total_graf2,sql_xarxa,uri)
                                 vlayer=buffer_resultat['OUTPUT']
                                 vlayer_graf=graf_resultat['OUTPUT']
             
                                 #uri = "dbname='test' host=localhost port=5432 user='user' password='password' key=gid type=POINT table=\"public\".\"test\" (geom) sql="
                                 # layer - QGIS vector layer
-                                error = QgsVectorLayerExporter.exportLayer(vlayer, 'table="public"."buffer_final_'+Fitxer+'" (the_geom) '+uri.connectionInfo(), "postgres", vlayer.crs(), False)
+                                error = QgsVectorLayerExporter.exportLayer(vlayer, 'table="public"."Buffer_Final_'+Fitxer+'" (geom) '+uri.connectionInfo(), "postgres", vlayer.crs(), False)
                                 if error[0] != 0:
                                     iface.messageBar().pushMessage(u'Error', error[1])
                                     
-                                #error = QgsVectorLayerExporter.exportLayer(buffer_dissolved['OUTPUT'], 'table="public"."buffer_diss_'+Fitxer+'" (the_geom) '+uri.connectionInfo(), "postgres", vlayer.crs(), False)
+                                #error = QgsVectorLayerExporter.exportLayer(buffer_dissolved['OUTPUT'], 'table="public"."buffer_diss_'+Fitxer+'" (geom) '+uri.connectionInfo(), "postgres", vlayer.crs(), False)
                                 #if error[0] != 0:
                                 #    iface.messageBar().pushMessage(u'Error', error[1])
                                     
-                                sql_buffer="SELECT * FROM \"buffer_final_"+Fitxer+"\""
+                                sql_buffer="SELECT * FROM \"Buffer_Final_"+Fitxer+"\""
                         
                         else:
                             sql_buffer=self.calcul_graf(sql_total)
                             if sql_buffer=="ERROR":
                                 self.dlg.setEnabled(True)
                                 return         
-                            sql_activitat = "ALTER TABLE \"buffer_final_"+Fitxer+"\" ADD \"Nom\" varchar, ADD \"EPIGRAFIAE\" varchar, ADD \"NumPol\" varchar, ADD \"METRES2\" float8, ADD \"REF_CADAST\" varchar;"
+                            sql_activitat = "ALTER TABLE \"Buffer_Final_"+Fitxer+"\" ADD \"name\" varchar, ADD \"epigraph\" varchar, ADD \"designator\" varchar, ADD \"area_value\" float8, ADD \"cadastral_reference\" varchar;"
                             cur.execute(sql_activitat)
                             conn.commit()
                             
-                            sql_activitat = 'UPDATE \"buffer_final_'+Fitxer+'\" SET ' 
-                            sql_activitat += '\"Nom\" = (SELECT \"FULLNAME\" FROM \"BrossaComercial\" WHERE \"buffer_final_'+Fitxer+'\".\"punt_id\" = \"BrossaComercial\".\"id\"),'
-                            sql_activitat += '\"EPIGRAFIAE\" = (SELECT \"EPIGRAFIAE\" FROM \"BrossaComercial\" WHERE \"buffer_final_'+Fitxer+'\".\"punt_id\" = \"BrossaComercial\".\"id\"),'
-                            sql_activitat += '\"NumPol\" = (SELECT \"NumPol\" FROM \"BrossaComercial\" WHERE \"buffer_final_'+Fitxer+'\".\"punt_id\" = \"BrossaComercial\".\"id\"),'
-                            sql_activitat += '\"METRES2\" = (SELECT \"METRES2\" FROM \"BrossaComercial\" WHERE \"buffer_final_'+Fitxer+'\".\"punt_id\" = \"BrossaComercial\".\"id\"),'
-                            sql_activitat += '\"REF_CADAST\" = (SELECT \"CADASREF\" FROM \"BrossaComercial\" WHERE \"buffer_final_'+Fitxer+'\".\"punt_id\" = \"BrossaComercial\".\"id\");'
+                            sql_activitat = 'UPDATE \"Buffer_Final_'+Fitxer+'\" SET ' 
+                            sql_activitat += '\"name\" = (SELECT \"name\" FROM \"company\" WHERE \"Buffer_Final_'+Fitxer+'\".\"punt_id\" = \"company\".\"id_company\"),'
+                            sql_activitat += '\"epigraph\" = (SELECT \"epigraph\" FROM \"company\" WHERE \"Buffer_Final_'+Fitxer+'\".\"punt_id\" = \"company\".\"id_company\"),'
+                            sql_activitat += '\"designator\" = (SELECT \"designator\" FROM \"company\" WHERE \"Buffer_Final_'+Fitxer+'\".\"punt_id\" = \"company\".\"id_company\"),'
+                            sql_activitat += '\"area_value\" = (SELECT \"area_value\" FROM \"company\" WHERE \"Buffer_Final_'+Fitxer+'\".\"punt_id\" = \"company\".\"id_company\"),'
+                            sql_activitat += '\"cadastral_reference\" = (SELECT \"cadastral_reference\" FROM \"company\" WHERE \"Buffer_Final_'+Fitxer+'\".\"punt_id\" = \"company\".\"id_company\");'
 
                             '''
-                            sql_activitat += '\"Nom\" = (SELECT \"BrossaComercial\".\"FULLNAME\" FROM \"BrossaComercial\",\"buffer_final_'+Fitxer+'\" WHERE \"buffer_final_'+Fitxer+'\".\"punt_id\" = \"BrossaComercial\".\"id\"),'
-                            sql_activitat += '\"EPIGRAFIAE\" = (SELECT \"BrossaComercial\".\"EPIGRAFIAE\" FROM \"BrossaComercial\",\"buffer_final_'+Fitxer+'\" WHERE \"buffer_final_'+Fitxer+'\".\"punt_id\" = \"BrossaComercial\".\"id\"),'
-                            sql_activitat += '\"NumPol\" = (SELECT \"BrossaComercial\".\"NumPol\" FROM \"BrossaComercial\",\"buffer_final_'+Fitxer+'\" WHERE \"buffer_final_'+Fitxer+'\".\"punt_id\" = \"BrossaComercial\".\"id\"),'
-                            sql_activitat += '\"METRES2\" = (SELECT \"BrossaComercial\".\"METRES2\" FROM \"BrossaComercial\",\"buffer_final_'+Fitxer+'\" WHERE \"buffer_final_'+Fitxer+'\".\"punt_id\" = \"BrossaComercial\".\"id\"),'
-                            sql_activitat += '\"REF_CADAST\" = (SELECT \"BrossaComercial\".\"CADASREF\" FROM \"BrossaComercial\",\"buffer_final_'+Fitxer+'\" WHERE \"buffer_final_'+Fitxer+'\".\"punt_id\" = \"BrossaComercial\".\"id\");'
+                            sql_activitat += '\"name\" = (SELECT \"company\".\"name\" FROM \"company\",\"Buffer_Final_'+Fitxer+'\" WHERE \"Buffer_Final_'+Fitxer+'\".\"punt_id\" = \"company\".\"id_company\"),'
+                            sql_activitat += '\"epigraph\" = (SELECT \"company\".\"epigraph\" FROM \"company\",\"Buffer_Final_'+Fitxer+'\" WHERE \"Buffer_Final_'+Fitxer+'\".\"punt_id\" = \"company\".\"id_company\"),'
+                            sql_activitat += '\"designator\" = (SELECT \"company\".\"designator\" FROM \"company\",\"Buffer_Final_'+Fitxer+'\" WHERE \"Buffer_Final_'+Fitxer+'\".\"punt_id\" = \"company\".\"id_company\"),'
+                            sql_activitat += '\"area_value\" = (SELECT \"company\".\"area_value\" FROM \"company\",\"Buffer_Final_'+Fitxer+'\" WHERE \"Buffer_Final_'+Fitxer+'\".\"punt_id\" = \"company\".\"id_company\"),'
+                            sql_activitat += '\"cadastral_reference\" = (SELECT \"company\".\"cadastral_reference\" FROM \"company\",\"Buffer_Final_'+Fitxer+'\" WHERE \"Buffer_Final_'+Fitxer+'\".\"punt_id\" = \"company\".\"id_company\");'
                             '''
                             cur.execute(sql_activitat)
                             conn.commit()                   
@@ -2229,29 +2222,29 @@ class ActivitatsEconomiques:
                         progress.setValue(60)
                         self.dlg.Progres.setValue(60)
                         QApplication.processEvents()
-                        sql_ZI=sql_buffer #"select TOT.\"EPIGRAFIAE\",TOT.\"Carrer_Num_Bis\",TOT.\"REF_CADAST\",TOT.\"NumPol\",TOT.\"METRES2\",TOT.\"radi\",row_number() OVER () AS \"ogc_fid\",ST_Buffer(TOT.\"geom\","+self.dlg.Radi_ZI.text()+"::double precision) AS the_geom from ("+sql_buffer+") TOT"
-                        sql_PART1_ZI="SELECT row_number() OVER () AS \"ogc_fid\",ILL.\"D_S_I\",ILL.\"geom\",RS.\"Habitants\" FROM (select \"ILLES\".\"D_S_I\",\"ILLES\".\"geom\" from \"ILLES\" where \"ILLES\".\"id\" NOT IN (select \"ILLES\".\"id\" from \"ILLES\" INNER JOIN ("
+                        sql_ZI=sql_buffer #"select TOT.\"epigraph\",TOT.\"designator\",TOT.\"cadastral_reference\",TOT.\"designator\",TOT.\"area_value\",TOT.\"radi\",row_number() OVER () AS \"ogc_fid\",ST_Buffer(TOT.\"geom\","+self.dlg.Radi_ZI.text()+"::double precision) AS geom from ("+sql_buffer+") TOT"
+                        sql_PART1_ZI="SELECT row_number() OVER () AS \"ogc_fid\",ILL.\"cadastral_zoning_reference\",ILL.\"geom\",RS.\"Habitants\" FROM (select \"zone\".\"cadastral_zoning_reference\",\"zone\".\"geom\" from \"zone\" where \"zone\".\"id_zone\" NOT IN (select \"zone\".\"id_zone\" from \"zone\" INNER JOIN ("
                         #print "buf:"+sql_buffer
                         #print "ZI:"+sql_ZI
                         #print "PART1_ZI:"+sql_PART1_ZI
                         
-                        sql_TOTAL_ZI=sql_PART1_ZI+sql_ZI+") TOT2 on ST_Intersects(\"ILLES\".\"geom\",TOT2.\"the_geom\"))) ILL JOIN \"Resum_Temp_"+Fitxer+"\" RS on (ILL.\"D_S_I\" = RS.\"ILLES_Codificades\")"
+                        sql_TOTAL_ZI=sql_PART1_ZI+sql_ZI+") TOT2 on ST_Intersects(\"zone\".\"geom\",TOT2.\"geom\"))) ILL JOIN \"Resum_Temp_"+Fitxer+"\" RS on (ILL.\"cadastral_zoning_reference\" = RS.\"ILLES_Codificades\")"
                     else:
                         
                         #Calcul mitjan�ant Zona Circular
-                        sql="SELECT BC.\"EPIGRAFIAE\",BC.\"FULLNAME\" AS \"Nom\",DI.\"Carrer_Num_Bis\",DI.\"REF_CADAST\",DI.\"geom\",BC.\"NumPol\",BC.\"METRES2\",("+self.dlg.texte_2.text()+"*SQRT(BC.\"METRES2\"/ PI())) AS RADI FROM (select * from \"BrossaComercial\" "
-                        wheresql="where \"EPIGRAFIAE\" in "+where_sentence+") BC LEFT JOIN \"dintreilla\" DI ON (BC.\"NumPol\" = DI.\"Carrer_Num_Bis\")"
-                        sql_ZI="select TOT.\"EPIGRAFIAE\", TOT.\"Nom\", TOT.\"Carrer_Num_Bis\",TOT.\"REF_CADAST\",TOT.\"NumPol\",TOT.\"METRES2\",TOT.\"radi\",row_number() OVER () AS \"ogc_fid\",ST_Buffer(TOT.\"geom\","+self.dlg.Radi_ZI.text()+"::double precision) AS the_geom from ("+sql+wheresql+") TOT"
-                        sql_PART1_ZI="SELECT row_number() OVER () AS \"ogc_fid\",ILL.\"D_S_I\",ILL.\"geom\",RS.\"Habitants\" FROM (select \"ILLES\".\"D_S_I\",\"ILLES\".\"geom\" from \"ILLES\" where \"ILLES\".\"id\" NOT IN (select \"ILLES\".\"id\" from \"ILLES\" INNER JOIN ("
-                        sql_TOTAL_ZI=sql_PART1_ZI+sql_ZI+") TOT2 on ST_Intersects(\"ILLES\".\"geom\",TOT2.\"the_geom\"))) ILL JOIN \"Resum_Temp_"+Fitxer+"\" RS on (ILL.\"D_S_I\" = RS.\"ILLES_Codificades\")"
+                        sql="SELECT BC.\"epigraph\",BC.\"name\",DI.\"designator\" AS \"di_designator\",DI.\"cadastral_reference\",DI.\"geom\",BC.\"designator\" AS \"bc_designator\",BC.\"area_value\",("+self.dlg.texte_2.text()+"*SQRT(BC.\"area_value\"/ PI())) AS RADI FROM (select * from \"company\" "
+                        wheresql="where \"epigraph\" in "+where_sentence+") BC LEFT JOIN \"address\" DI ON (BC.\"designator\" = DI.\"designator\")"
+                        sql_ZI="select TOT.\"epigraph\", TOT.\"name\", TOT.\"di_designator\",TOT.\"cadastral_reference\",TOT.\"bc_designator\",TOT.\"area_value\",TOT.\"radi\",row_number() OVER () AS \"ogc_fid\",ST_Buffer(TOT.\"geom\","+self.dlg.Radi_ZI.text()+"::double precision) AS geom from ("+sql+wheresql+") TOT"
+                        sql_PART1_ZI="SELECT row_number() OVER () AS \"ogc_fid\",ILL.\"cadastral_zoning_reference\",ILL.\"geom\",RS.\"Habitants\" FROM (select \"zone\".\"cadastral_zoning_reference\",\"zone\".\"geom\" from \"zone\" where \"zone\".\"id_zone\" NOT IN (select \"zone\".\"id_zone\" from \"zone\" INNER JOIN ("
+                        sql_TOTAL_ZI=sql_PART1_ZI+sql_ZI+") TOT2 on ST_Intersects(\"zone\".\"geom\",TOT2.\"geom\"))) ILL JOIN \"Resum_Temp_"+Fitxer+"\" RS on (ILL.\"cadastral_zoning_reference\" = RS.\"ILLES_Codificades\")"
                 else:
 
                     #Calcul mitjançant parceles
                
-                    sql="SELECT PA.\"geom\",PACOUNT.\"numae\",PA.\"UTM\" FROM (SELECT count(BC.\"EPIGRAFIAE\") as numAE , PA.\"UTM\" FROM (select * from \"BrossaComercial\" where \"EPIGRAFIAE\" in "+where_sentence+") BC LEFT JOIN \"parcel\" PA ON (BC.\"CADASREF\" = PA.\"UTM\") WHERE (PA.\"UTM\" IS NOT NULL) AND (PA.\"UTM\"<>' ')  GROUP BY PA.\"UTM\") PACOUNT LEFT JOIN \"parcel\" PA ON (PACOUNT.\"UTM\"=PA.\"UTM\") WHERE (PACOUNT.\"numae\">0) "
-                    sql_ZI="select TOT.\"UTM\",TOT.\"numae\",row_number() OVER () AS \"ogc_fid\",ST_Buffer(TOT.\"geom\","+self.dlg.Radi_ZI.text()+"::double precision) as the_geom from ("+sql+") TOT"
-                    sql_PART1_ZI="SELECT row_number() OVER () AS \"ogc_fid\",ILL.\"D_S_I\",ILL.\"geom\",RS.\"Habitants\" FROM (select \"ILLES\".\"D_S_I\",\"ILLES\".\"geom\" from \"ILLES\" where \"ILLES\".\"id\" NOT IN (select \"ILLES\".\"id\" from \"ILLES\" INNER JOIN ("
-                    sql_TOTAL_ZI=sql_PART1_ZI+sql_ZI+") TOT2 on ST_Intersects(\"ILLES\".\"geom\",TOT2.\"the_geom\"))) ILL JOIN \"Resum_Temp_"+Fitxer+"\" RS on (ILL.\"D_S_I\" = RS.\"ILLES_Codificades\")"
+                    sql="SELECT PA.\"geom\",PACOUNT.\"numae\",PA.\"cadastral_reference\" FROM (SELECT count(BC.\"epigraph\") as numAE , PA.\"cadastral_reference\" FROM (select * from \"company\" where \"epigraph\" in "+where_sentence+") BC LEFT JOIN \"parcel\" PA ON (BC.\"cadastral_reference\" = PA.\"cadastral_reference\") WHERE (PA.\"cadastral_reference\" IS NOT NULL) AND (PA.\"cadastral_reference\"<>' ')  GROUP BY PA.\"cadastral_reference\") PACOUNT LEFT JOIN \"parcel\" PA ON (PACOUNT.\"cadastral_reference\"=PA.\"cadastral_reference\") WHERE (PACOUNT.\"numae\">0) "
+                    sql_ZI="select TOT.\"cadastral_reference\",TOT.\"numae\",row_number() OVER () AS \"ogc_fid\",ST_Buffer(TOT.\"geom\","+self.dlg.Radi_ZI.text()+"::double precision) as geom from ("+sql+") TOT"
+                    sql_PART1_ZI="SELECT row_number() OVER () AS \"ogc_fid\",ILL.\"cadastral_zoning_reference\",ILL.\"geom\",RS.\"Habitants\" FROM (select \"zone\".\"cadastral_zoning_reference\",\"zone\".\"geom\" from \"zone\" where \"zone\".\"id_zone\" NOT IN (select \"zone\".\"id_zone\" from \"zone\" INNER JOIN ("
+                    sql_TOTAL_ZI=sql_PART1_ZI+sql_ZI+") TOT2 on ST_Intersects(\"zone\".\"geom\",TOT2.\"geom\"))) ILL JOIN \"Resum_Temp_"+Fitxer+"\" RS on (ILL.\"cadastral_zoning_reference\" = RS.\"ILLES_Codificades\")"
                 
                 uri.setDataSource("","("+sql_TOTAL_ZI+")","geom","","ogc_fid")
                 if (self.dlg.RelacionarPoblacio.isChecked()):
@@ -2312,19 +2305,19 @@ class ActivitatsEconomiques:
                         if self.dlg.topo.isChecked():
                             if (self.dlg.ZIGraf_radio.isChecked()):
                                 if (self.dlg.chk_calc_local.isChecked() and self.dlg.ZIGraf_radio.isChecked()):
-                                    sql_total1="SELECT id_0 AS \"ogc_fid\",id AS \"punt_id\",\"the_geom\", \"EPIGRAFIAE\",\"Nom\", \"NumPol\",\"METRES2\",\"REF_CADAST\" FROM Buffer_Final_"+Fitxer
+                                    sql_total1="SELECT id_0 AS \"ogc_fid\",id AS \"punt_id\",\"geom\", \"epigraph\",\"name\", \"di_designator\",\"area_value\",\"cadastral_reference\" FROM \"Buffer_Final_"+Fitxer+"\""
                                 else:
-                                    sql_total1="SELECT row_number() OVER () AS \"ogc_fid\",\"punt_id\",\"the_geom\", \"EPIGRAFIAE\",\"Nom\", \"NumPol\",\"METRES2\",\"REF_CADAST\" FROM Buffer_Final_"+Fitxer
+                                    sql_total1="SELECT row_number() OVER () AS \"ogc_fid\",\"punt_id\",\"geom\", \"epigraph\",\"name\", \"designator\",\"area_value\",\"cadastral_reference\" FROM \"Buffer_Final_"+Fitxer+"\""
                                 
                             else:
-                                sql1="SELECT BC.\"EPIGRAFIAE\",BC.\"FULLNAME\" AS \"Nom\", DI.\"Carrer_Num_Bis\",DI.\"REF_CADAST\",DI.\"geom\",BC.\"NumPol\",BC.\"METRES2\",("+self.dlg.texte_2.text()+"*SQRT(BC.\"METRES2\"/ PI())) AS RADI FROM (select * from \"BrossaComercial\" "
-                                wheresql1="where \"EPIGRAFIAE\" in "+where_sentence+") BC LEFT JOIN \"dintreilla\" DI ON (BC.\"NumPol\" = DI.\"Carrer_Num_Bis\")"
-                                sql_total1="select TOT.\"EPIGRAFIAE\",TOT.\"Nom\", TOT.\"Carrer_Num_Bis\",TOT.\"REF_CADAST\",TOT.\"NumPol\",TOT.\"METRES2\",TOT.\"radi\",row_number() OVER () AS \"ogc_fid\",ST_Buffer(TOT.\"geom\","+self.dlg.Radi_ZI.text()+"::double precision) AS the_geom from ("+sql+wheresql+") TOT"
+                                sql1="SELECT BC.\"epigraph\",BC.\"name\", DI.\"designator\" AS \"di_designator\",DI.\"cadastral_reference\",DI.\"geom\",BC.\"designator\" AS \"bc_designator\",BC.\"area_value\",("+self.dlg.texte_2.text()+"*SQRT(BC.\"area_value\"/ PI())) AS RADI FROM (select * from \"company\" "
+                                wheresql1="where \"epigraph\" in "+where_sentence+") BC LEFT JOIN \"address\" DI ON (BC.\"designator\" = DI.\"designator\")"
+                                sql_total1="select TOT.\"epigraph\",TOT.\"name\", TOT.\"di_designator\",TOT.\"cadastral_reference\",TOT.\"bc_designator\",TOT.\"area_value\",TOT.\"radi\",row_number() OVER () AS \"ogc_fid\",ST_Buffer(TOT.\"geom\","+self.dlg.Radi_ZI.text()+"::double precision) AS geom from ("+sql+wheresql+") TOT"
                         else:
-                            sql="SELECT PA.\"geom\",PACOUNT.\"numae\",PA.\"UTM\" FROM (SELECT count(BC.\"EPIGRAFIAE\") as numAE , PA.\"UTM\" FROM (select * from \"BrossaComercial\" where \"EPIGRAFIAE\" in "+where_sentence+") BC LEFT JOIN \"parcel\" PA ON (BC.\"CADASREF\" = PA.\"UTM\") WHERE (PA.\"UTM\" IS NOT NULL) AND (PA.\"UTM\"<>' ')  GROUP BY PA.\"UTM\") PACOUNT LEFT JOIN \"parcel\" PA ON (PACOUNT.\"UTM\"=PA.\"UTM\") WHERE (PACOUNT.\"numae\">0) "
-                            sql_total1="select TOT.\"UTM\" as \"ogc_fid\",TOT.\"numae\",ST_Buffer(TOT.\"geom\","+self.dlg.Radi_ZI.text()+"::double precision) as the_geom from ("+sql+") TOT"
+                            sql="SELECT PA.\"geom\",PACOUNT.\"numae\",PA.\"cadastral_reference\" FROM (SELECT count(BC.\"epigraph\") as numAE , PA.\"cadastral_reference\" FROM (select * from \"company\" where \"epigraph\" in "+where_sentence+") BC LEFT JOIN \"parcel\" PA ON (BC.\"cadastral_reference\" = PA.\"cadastral_reference\") WHERE (PA.\"cadastral_reference\" IS NOT NULL) AND (PA.\"cadastral_reference\"<>' ')  GROUP BY PA.\"cadastral_reference\") PACOUNT LEFT JOIN \"parcel\" PA ON (PACOUNT.\"cadastral_reference\"=PA.\"cadastral_reference\") WHERE (PACOUNT.\"numae\">0) "
+                            sql_total1="select TOT.\"cadastral_reference\" as \"ogc_fid\",TOT.\"numae\",ST_Buffer(TOT.\"geom\","+self.dlg.Radi_ZI.text()+"::double precision) as geom from ("+sql+") TOT"
                             
-                        uri.setDataSource("","("+sql_total1+")","the_geom","","ogc_fid")
+                        uri.setDataSource("","("+sql_total1+")","geom","","ogc_fid")
                         titol=self.dlg.texte_3.text().replace("'","\'")
                         titol2='Àrea influència dels números de policia amb activitat: '
                         titol3=titol2.encode('utf8','strict')+titol.encode('utf8','strict')
@@ -2354,7 +2347,7 @@ class ActivitatsEconomiques:
                     QApplication.processEvents()
                     
                     if (self.dlg.MostrarGraf_chk.isChecked()):
-                        uri.setDataSource("","(SELECT * FROM Graf_utilitzat_"+Fitxer+")","the_geom","","id")
+                        uri.setDataSource("","(SELECT * FROM Graf_utilitzat_"+Fitxer+")","geom","","id")
                         titol=self.dlg.texte_3.text().replace("'","\'")
                         titol2='Graf: '
                         titol3=titol2.encode('utf8','strict')+titol.encode('utf8','strict')
@@ -2418,7 +2411,7 @@ class ActivitatsEconomiques:
         global conn
         try:
             cur.execute("DROP TABLE IF EXISTS \"Resum_Temp_"+Fitxer+"\"")
-            cur.execute("DROP TABLE IF EXISTS Buffer_Final_"+Fitxer) 
+            cur.execute("DROP TABLE IF EXISTS \"Buffer_Final_"+Fitxer+"\"") 
             cur.execute("DROP TABLE IF EXISTS Graf_utilitzat_"+Fitxer)
             conn.commit()
         except Exception as ex:
@@ -2530,7 +2523,7 @@ class ActivitatsEconomiques:
             for elem in llista:
                 try:
                     if isinstance(elem, tuple):
-                        item = QStandardItem(unicode(elem[0]))
+                        item = QStandardItem(str(elem[0]))
                     else:
                         item = QStandardItem(str(elem))
                 except TypeError:
