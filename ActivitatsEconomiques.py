@@ -74,6 +74,7 @@ from .resources import *
 from .ActivitatsEconomiques_dialog import ActivitatsEconomiquesDialog
 import os.path
 from email.header import UTF8
+
 nomBD1=""
 contra1=""
 host1=""
@@ -87,8 +88,11 @@ micolor_ZI=None
 micolor_Graf=None
 Fitxer=""
 Path_Inicial=expanduser("~")
-Versio_modul="V_Q3.240306"
+Versio_modul="V_Q3.240319"
+
 progress=None
+
+versio_db = ""
 
 class ActivitatsEconomiques:
     """QGIS Plugin Implementation."""
@@ -474,6 +478,7 @@ class ActivitatsEconomiques:
         #        layers.append(query.value(0))
         layers.sort()
         return layers
+
     def cercaDescripcio(self):
         """Aquesta funcio cerca els epigrafs que continguin la paraula clau que li passem"""
         global cur
@@ -504,8 +509,6 @@ class ActivitatsEconomiques:
             self.dlg.ListaActivitatsDesc.item(index).setToolTip(str(row[1]))
         var=cur.fetchall()
         return var;
-            
-        
 
     def cercaEpigraf(self):
         """Aquesta funcio cerca els epigrafs que continguin la paraula clau que li passem"""
@@ -693,6 +696,7 @@ class ActivitatsEconomiques:
                     else:
                         QMessageBox.information(None, "Error", 'El graf seleccionat no té la capa de nusos corresponent.\nEscolliu un altre.')
         except Exception as ex:
+            self.eliminaTaulesTemporals()
             print ("Error Graf seleccionat")
             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
             message = template.format(type(ex).__name__, ex.args)
@@ -805,6 +809,7 @@ class ActivitatsEconomiques:
             cur.execute(sql_1)
             conn.commit()
         except Exception as ex:
+            self.eliminaTaulesTemporals()
             print ("Error CREATE Xarxa_Graf")
             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
             message = template.format(type(ex).__name__, ex.args)
@@ -844,6 +849,7 @@ class ActivitatsEconomiques:
             cur.execute(sql_1)
             conn.commit()
         except Exception as ex:
+            self.eliminaTaulesTemporals()
             print ("Error CREATE punts_interes_temp")
             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
             message = template.format(type(ex).__name__, ex.args)
@@ -874,6 +880,7 @@ class ActivitatsEconomiques:
             cur.execute(sql_1)
             conn.commit()
         except Exception as ex:
+            self.eliminaTaulesTemporals()
             print ("Error UPDATE punts_interes_temp")
             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
             message = template.format(type(ex).__name__, ex.args)
@@ -907,6 +914,7 @@ class ActivitatsEconomiques:
             conn.commit()
             
         except Exception as ex:
+            self.eliminaTaulesTemporals()
             print ("CREATE tbl_punts_finals_tmp TABLE ERROR")
             
             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
@@ -940,6 +948,7 @@ class ActivitatsEconomiques:
             cur.execute(sql_1)
             conn.commit()
         except Exception as ex:
+            self.eliminaTaulesTemporals()
             print ("CREATE geo_punts_finals_tmp TABLE ERROR")
             
             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
@@ -988,6 +997,7 @@ class ActivitatsEconomiques:
             cur.execute(sql_1)
             conn.commit()
         except Exception as ex:
+            self.eliminaTaulesTemporals()
             print ("CREATE trams_finals_tmp TABLE ERROR")
             
             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
@@ -1055,6 +1065,7 @@ class ActivitatsEconomiques:
             cur.execute(sql_1)
             conn.commit()
         except Exception as ex:
+            self.eliminaTaulesTemporals()
             print ("Select Cobertura ERROR")
             
             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
@@ -1078,6 +1089,7 @@ class ActivitatsEconomiques:
             cur.execute(sql_1)
             conn.commit()
         except Exception as ex:
+            self.eliminaTaulesTemporals()
             print ("Error DROP Cobertura")
             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
             message = template.format(type(ex).__name__, ex.args)
@@ -1105,6 +1117,7 @@ class ActivitatsEconomiques:
             cur.execute(sql_1)
             conn.commit()
         except Exception as ex:
+            self.eliminaTaulesTemporals()
             print ("UPDATE fraccio_trams_raw TABLE ERROR")
             
             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
@@ -1137,6 +1150,7 @@ class ActivitatsEconomiques:
             cur.execute(sql_1)
             conn.commit()
         except Exception as ex:
+            self.eliminaTaulesTemporals()
             print ("UPDATE 2 fraccio_trams_raw TABLE ERROR 2")
             
             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
@@ -1190,6 +1204,7 @@ class ActivitatsEconomiques:
             cur.execute(sql_1)
             conn.commit()
         except Exception as ex:
+            self.eliminaTaulesTemporals()
             print ("UPDATE 4 fraccio_trams_raw TABLE ERROR")
             
             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
@@ -1239,6 +1254,7 @@ class ActivitatsEconomiques:
             cur.execute(sql_1)
             conn.commit()
         except Exception as ex:
+            self.eliminaTaulesTemporals()
             print ("UPDATE 5 fraccio_trams_raw TABLE ERROR")
             
             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
@@ -1271,6 +1287,7 @@ class ActivitatsEconomiques:
             cur.execute(sql_1)
             conn.commit()
         except Exception as ex:
+            self.eliminaTaulesTemporals()
             print ("INSERT fraccio_trams_raw TABLE ERROR")
             
             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
@@ -1335,6 +1352,7 @@ class ActivitatsEconomiques:
             cur.execute(sql_1)
             conn.commit()
         except Exception as ex:
+            self.eliminaTaulesTemporals()
             print ("UPDATE 8 fraccio_trams_raw TABLE ERROR")
             
             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
@@ -1370,6 +1388,7 @@ class ActivitatsEconomiques:
             cur.execute(sql_1)
             conn.commit()
         except Exception as ex:
+            self.eliminaTaulesTemporals()
             print ("CREATE fraccio_trams_tmp TABLE ERROR")
             
             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
@@ -1402,6 +1421,7 @@ class ActivitatsEconomiques:
             cur.execute(sql_1)
             conn.commit()
         except Exception as ex:
+            self.eliminaTaulesTemporals()
             print ("CREATE Graf_utilitzat_ TABLE ERROR")
             
             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
@@ -1434,6 +1454,7 @@ class ActivitatsEconomiques:
             cur.execute(sql_1)
             conn.commit()
         except Exception as ex:
+            self.eliminaTaulesTemporals()
             print ("CREATE Buffer_Final TABLE ERROR")
             
             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
@@ -1463,6 +1484,7 @@ class ActivitatsEconomiques:
             sql_total="SELECT * FROM \"Buffer_Final_"+Fitxer+"\""
             return sql_total
         except Exception as ex:
+            self.eliminaTaulesTemporals()
             print ("Error DROP Graf_utilitzat")
             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
             message = template.format(type(ex).__name__, ex.args)
@@ -1478,7 +1500,6 @@ class ActivitatsEconomiques:
             self.dlg.setEnabled(True)
             return "ERROR"
 
-    
     def calcul_graf2(self,sql_punts,sql_xarxa,uri2):
         #               *****************************************************************************************************************
         #               INICI CARREGA DE LES zone, PARCELES O PORTALS QUE QUEDEN AFECTATS PEL BUFFER DEL GRAF 
@@ -1534,7 +1555,6 @@ class ActivitatsEconomiques:
                                                                     "OUTPUT": 'memory:'})
         return result_buffer_dissolve,result_dissolve
 
-    
     def troba_distancia(self,linea,punt):
         distancia=linea.geometry().lineLocatePoint(punt.geometry())
         return distancia
@@ -1708,7 +1728,7 @@ class ActivitatsEconomiques:
         return outputs['Direccio']['OUTPUT']
                 
         #print (outputs)
-    
+
     def calcul_graf3(self,sql_punts,sql_xarxa,uri2):
         #               *****************************************************************************************************************
         #               INICI CARREGA DE LES zone, PARCELES O PORTALS QUE QUEDEN AFECTATS PEL BUFFER DEL GRAF 
@@ -1742,7 +1762,6 @@ class ActivitatsEconomiques:
         p_lyr = outputs['ReproyectarCapa']['OUTPUT']
         graf = network_lyr
         
-
         l_lyr=self.Calcula_VEL_KMH(graf,epsg,uri2)
         
         #QgsProject.instance().addMapLayer(l_lyr)
@@ -1949,8 +1968,6 @@ class ActivitatsEconomiques:
         
         return result_buffer_dissolve,result_dissolve
     
-  
-    
     def on_click_INICI(self):
         """Aquesta funcio genera tots els calculs amb tots el parametres que li hem introduit
         a la finestra a traves dels elements de la interficie."""
@@ -2021,6 +2038,7 @@ class ActivitatsEconomiques:
                             conn.commit()
                             #print "ok"                
                         except Exception as ex:
+                            self.eliminaTaulesTemporals()
                             print ("I am unable to connect to the database")
                             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
                             message = template.format(type(ex).__name__, ex.args)
@@ -2094,7 +2112,7 @@ class ActivitatsEconomiques:
                     
                     sql_total_graf2="select distinct on (id) TOT.\"epigraph\", TOT.\"name\",TOT.\"di_designator\",TOT.\"cadastral_reference\",TOT.\"bc_designator\",TOT.\"area_value\",TOT.\"radi\",TOT.\"id_company\" AS \"id\",TOT.\"geom\" AS geom from ("+sql+wheresql+") TOT"
                 else:
-                    sql="SELECT PA.\"geom\",PACOUNT.\"numae\",PA.\"cadastral_reference\", PACOUNT.\"id\" FROM (SELECT count(BC.\"epigraph\") as numAE , PA.\"cadastral_reference\", BC.\"id_company\" as id FROM (select * from \"company\" where \"epigraph\" in "+where_sentence+") BC LEFT JOIN \"parcel\" PA ON (BC.\"cadastral_reference\" = PA.\"cadastral_reference\") WHERE (PA.\"cadastral_reference\" IS NOT NULL) AND (PA.\"cadastral_reference\"<>' ')  GROUP BY PA.\"cadastral_reference\") PACOUNT LEFT JOIN \"parcel\" PA ON (PACOUNT.\"cadastral_reference\"=PA.\"cadastral_reference\") WHERE (PACOUNT.\"numae\">0) "
+                    sql="SELECT PA.\"geom\",PACOUNT.\"numae\",PA.\"cadastral_reference\", PACOUNT.\"id\" FROM (SELECT count(BC.\"epigraph\") as numAE , PA.\"cadastral_reference\", BC.\"id_company\" as id FROM (select * from \"company\" where \"epigraph\" in "+where_sentence+") BC LEFT JOIN \"parcel_temp\" PA ON (BC.\"cadastral_reference\" = PA.\"cadastral_reference\") WHERE (PA.\"cadastral_reference\" IS NOT NULL) AND (PA.\"cadastral_reference\"<>' ')  GROUP BY PA.\"cadastral_reference\") PACOUNT LEFT JOIN \"parcel_temp\" PA ON (PACOUNT.\"cadastral_reference\"=PA.\"cadastral_reference\") WHERE (PACOUNT.\"numae\">0) "
                     sql_total="select distinct on (id) row_number() OVER () AS \"ogc_fid\", TOT.\"cadastral_reference\",TOT.\"numae\",TOT.\"geom\", TOT.\"id\" as geom from ("+sql+") TOT"
                     
                 uri = QgsDataSourceUri()
@@ -2103,6 +2121,7 @@ class ActivitatsEconomiques:
                     print ("Connectat")
                     
                 except Exception as ex:
+                            self.eliminaTaulesTemporals()
                             print ("Error a la connexió")
                             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
                             message = template.format(type(ex).__name__, ex.args)
@@ -2158,7 +2177,7 @@ class ActivitatsEconomiques:
                         if (self.dlg.chk_calc_local.isChecked() and self.dlg.ZIGraf_radio.isChecked()):
                             if (self.dlg.GrafCombo.currentText()=="Distancia"):
                                 sql_xarxa="SELECT * FROM \""+self.dlg.comboGraf.currentText()+"\""
-                                buffer_resultat,graf_resultat=self.calcul_graf2(sql_total_graf2,sql_xarxa,uri)
+                                self.calcul_graf2(sql_total_graf2,sql_xarxa,uri)
                                 vlayer=buffer_resultat['OUTPUT']
                                 vlayer_graf=graf_resultat['OUTPUT']
             
@@ -2193,6 +2212,7 @@ class ActivitatsEconomiques:
                         
                         else:
                             sql_buffer=self.calcul_graf(sql_total)
+                            
                             if sql_buffer=="ERROR":
                                 self.dlg.setEnabled(True)
                                 return         
@@ -2241,7 +2261,7 @@ class ActivitatsEconomiques:
 
                     #Calcul mitjançant parceles
                
-                    sql="SELECT PA.\"geom\",PACOUNT.\"numae\",PA.\"cadastral_reference\" FROM (SELECT count(BC.\"epigraph\") as numAE , PA.\"cadastral_reference\" FROM (select * from \"company\" where \"epigraph\" in "+where_sentence+") BC LEFT JOIN \"parcel\" PA ON (BC.\"cadastral_reference\" = PA.\"cadastral_reference\") WHERE (PA.\"cadastral_reference\" IS NOT NULL) AND (PA.\"cadastral_reference\"<>' ')  GROUP BY PA.\"cadastral_reference\") PACOUNT LEFT JOIN \"parcel\" PA ON (PACOUNT.\"cadastral_reference\"=PA.\"cadastral_reference\") WHERE (PACOUNT.\"numae\">0) "
+                    sql="SELECT PA.\"geom\",PACOUNT.\"numae\",PA.\"cadastral_reference\" FROM (SELECT count(BC.\"epigraph\") as numAE , PA.\"cadastral_reference\" FROM (select * from \"company\" where \"epigraph\" in "+where_sentence+") BC LEFT JOIN \"parcel_temp\" PA ON (BC.\"cadastral_reference\" = PA.\"cadastral_reference\") WHERE (PA.\"cadastral_reference\" IS NOT NULL) AND (PA.\"cadastral_reference\"<>' ')  GROUP BY PA.\"cadastral_reference\") PACOUNT LEFT JOIN \"parcel_temp\" PA ON (PACOUNT.\"cadastral_reference\"=PA.\"cadastral_reference\") WHERE (PACOUNT.\"numae\">0) "
                     sql_ZI="select TOT.\"cadastral_reference\",TOT.\"numae\",row_number() OVER () AS \"ogc_fid\",ST_Buffer(TOT.\"geom\","+self.dlg.Radi_ZI.text()+"::double precision) as geom from ("+sql+") TOT"
                     sql_PART1_ZI="SELECT row_number() OVER () AS \"ogc_fid\",ILL.\"cadastral_zoning_reference\",ILL.\"geom\",RS.\"Habitants\" FROM (select \"zone\".\"cadastral_zoning_reference\",\"zone\".\"geom\" from \"zone\" where \"zone\".\"id_zone\" NOT IN (select \"zone\".\"id_zone\" from \"zone\" INNER JOIN ("
                     sql_TOTAL_ZI=sql_PART1_ZI+sql_ZI+") TOT2 on ST_Intersects(\"zone\".\"geom\",TOT2.\"geom\"))) ILL JOIN \"Resum_Temp_"+Fitxer+"\" RS on (ILL.\"cadastral_zoning_reference\" = RS.\"ILLES_Codificades\")"
@@ -2314,7 +2334,7 @@ class ActivitatsEconomiques:
                                 wheresql1="where \"epigraph\" in "+where_sentence+") BC LEFT JOIN \"address\" DI ON (BC.\"designator\" = DI.\"designator\")"
                                 sql_total1="select TOT.\"epigraph\",TOT.\"name\", TOT.\"di_designator\",TOT.\"cadastral_reference\",TOT.\"bc_designator\",TOT.\"area_value\",TOT.\"radi\",row_number() OVER () AS \"ogc_fid\",ST_Buffer(TOT.\"geom\","+self.dlg.Radi_ZI.text()+"::double precision) AS geom from ("+sql+wheresql+") TOT"
                         else:
-                            sql="SELECT PA.\"geom\",PACOUNT.\"numae\",PA.\"cadastral_reference\" FROM (SELECT count(BC.\"epigraph\") as numAE , PA.\"cadastral_reference\" FROM (select * from \"company\" where \"epigraph\" in "+where_sentence+") BC LEFT JOIN \"parcel\" PA ON (BC.\"cadastral_reference\" = PA.\"cadastral_reference\") WHERE (PA.\"cadastral_reference\" IS NOT NULL) AND (PA.\"cadastral_reference\"<>' ')  GROUP BY PA.\"cadastral_reference\") PACOUNT LEFT JOIN \"parcel\" PA ON (PACOUNT.\"cadastral_reference\"=PA.\"cadastral_reference\") WHERE (PACOUNT.\"numae\">0) "
+                            sql="SELECT PA.\"geom\",PACOUNT.\"numae\",PA.\"cadastral_reference\" FROM (SELECT count(BC.\"epigraph\") as numAE , PA.\"cadastral_reference\" FROM (select * from \"company\" where \"epigraph\" in "+where_sentence+") BC LEFT JOIN \"parcel_temp\" PA ON (BC.\"cadastral_reference\" = PA.\"cadastral_reference\") WHERE (PA.\"cadastral_reference\" IS NOT NULL) AND (PA.\"cadastral_reference\"<>' ')  GROUP BY PA.\"cadastral_reference\") PACOUNT LEFT JOIN \"parcel_temp\" PA ON (PACOUNT.\"cadastral_reference\"=PA.\"cadastral_reference\") WHERE (PACOUNT.\"numae\">0) "
                             sql_total1="select TOT.\"cadastral_reference\" as \"ogc_fid\",TOT.\"numae\",ST_Buffer(TOT.\"geom\","+self.dlg.Radi_ZI.text()+"::double precision) as geom from ("+sql+") TOT"
                             
                         uri.setDataSource("","("+sql_total1+")","geom","","ogc_fid")
@@ -2404,7 +2424,6 @@ class ActivitatsEconomiques:
         QApplication.processEvents()
         self.eliminaTaulesCalcul(Fitxer)
         self.dlg.setEnabled(True)
-    #@pyqtSlot()
     
     def eliminaTaulesCalcul(self,Fitxer):
         global cur
@@ -2415,6 +2434,7 @@ class ActivitatsEconomiques:
             cur.execute("DROP TABLE IF EXISTS Graf_utilitzat_"+Fitxer)
             conn.commit()
         except Exception as ex:
+            self.eliminaTaulesTemporals()
             print("Error DROP final")
             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
             message = template.format(type(ex).__name__, ex.args)
@@ -2455,6 +2475,7 @@ class ActivitatsEconomiques:
         global schema
         global cur
         global conn
+        global versio_db
         s = QSettings()
         nom_conn=self.dlg.ComboConn.currentText()
         select = 'Selecciona connexió'
@@ -2488,15 +2509,10 @@ class ActivitatsEconomiques:
                 self.dlg.EstatConnexio.setStyleSheet('border:1px solid #000000; background-color: #7fff7f')
                 self.dlg.EstatConnexio.setText('Connectat')
                 cur = conn.cursor()
-                self.cercaDescripcio()
-                self.cercaEpigraf()
-                sql = "select f_table_name from geometry_columns where ((type = 'MULTILINESTRING' or type = 'LINESTRING') and f_table_schema ='public') order by 1"
-                cur.execute(sql)
-                layersList= cur.fetchall()
-                self.ompleCombos(self.dlg.comboGraf, layersList, 'Selecciona una entitat', True)
+                self.database_version()
                 
-           
             except Exception as ex:
+                self.eliminaTaulesTemporals()
                 print ("I am unable to connect to the database")
                 template = "An exception of type {0} occurred. Arguments:\n{1!r}"
                 message = template.format(type(ex).__name__, ex.args)
@@ -2508,11 +2524,150 @@ class ActivitatsEconomiques:
                 self.dlg.EstatConnexio.setText('Error: Problema en la connexió.')
                 self.dlg.setEnabled(True)
                 return
+            
+            try:
+                self.cercaDescripcio()
+                self.cercaEpigraf()
+                sql = "select f_table_name from geometry_columns where ((type = 'MULTILINESTRING' or type = 'LINESTRING') and f_table_schema ='public') order by 1"
+                cur.execute(sql)
+                layersList= cur.fetchall()
+                self.ompleCombos(self.dlg.comboGraf, layersList, 'Selecciona una entitat', True)
+            except Exception as ex:
+                self.eliminaTaulesTemporals()
+                print ("I am unable to connect to the database")
+                template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+                message = template.format(type(ex).__name__, ex.args)
+                print (message)
+                QMessageBox.information(None, "Error", "Error canvi connexió")
+                conn.rollback()
+                self.dlg.ComboConn.setCurrentIndex(0)
+                self.dlg.lblEstatConn.setStyleSheet('border:1px solid #000000; background-color: #ff7f7f')
+                self.dlg.EstatConnexio.setText('Error: Problema en la connexió.')
+                self.dlg.setEnabled(True)
+                return
+           
+            
         else:
             self.dlg.EstatConnexio.setText('No connectat')
             self.dlg.EstatConnexio.setStyleSheet('border:1px solid #000000; background-color: #FFFFFF')
             self.dlg.ListaActivitatsDesc.clear()
             self.dlg.ListaActivitatsEpigraf.clear()
+
+    def database_version(self):
+        global versio_db
+        global cur
+        global conn
+
+        sql =   """
+                    SELECT taula
+                    FROM config
+                    WHERE variable = 'versio';
+                """
+        print(sql)
+        cur.execute(sql)
+        versio_db = cur.fetchone()[0]
+        print(versio_db)
+
+        if versio_db == '1.0':
+            cur.execute("""
+                DROP TABLE IF EXISTS company;
+                CREATE TABLE company (
+                    id_company,
+                    epigraph,
+                    designator,
+                    area_value,
+                    cadastral_reference,
+                    description,
+                    name
+                ) AS SELECT id, "EPIGRAFIAE", "NumPol", "METRES2", "CADASREF", "DESCRIPCIOACTIVITAT", "FULLNAME" FROM "BrossaComercial";
+            """)
+            conn.commit()
+            print("company table created")
+
+            cur.execute("""
+                        DROP TABLE IF EXISTS address;
+                        CREATE TABLE address (
+                            id_address,
+                            geom,
+                            cadastral_reference,
+                            designator
+                        ) AS SELECT id, geom, "REF_CADAST", "Carrer_Num_Bis" FROM "dintreilla";
+                        """)
+            conn.commit()
+            print("address table created")
+
+            cur.execute("""
+                        DROP TABLE IF EXISTS zone;
+
+                        CREATE TABLE zone (
+                            id_zone,
+                            geom,
+                            cadastral_zoning_reference
+                        ) AS SELECT id, geom, "D_S_I" FROM "ILLES";
+                        """)
+            conn.commit()
+            print("zone table created")
+
+            cur.execute("""
+                        DROP TABLE IF EXISTS parcel_temp;
+
+                        CREATE TABLE parcel_temp (
+                            id_parcel,
+                            geom,
+                            cadastral_reference
+                        ) AS SELECT id, geom, "UTM" FROM "parcel";
+                        """)
+            conn.commit()
+            print("parcel_temp table created")
+
+            cur.execute("""
+                        DROP TABLE IF EXISTS epigraph;
+
+                        CREATE TABLE epigraph (
+                            id_epigraph,
+                            description,
+                            epigraph_code
+                        ) AS SELECT id, "Descripcio epigraf", "Epigraf" FROM "Seccio1";
+                        """)
+            conn.commit()
+            print("epigraph table created")
+
+            cur.execute("""
+                        DROP TABLE IF EXISTS stretch;
+
+                        CREATE TABLE stretch (
+                            id,
+                            geom,
+                            cost,
+                            reverse_cost,
+                            semaphores,
+                            total_cost_semaphore,
+                            source,
+                            target,
+                            length,
+                            direction,
+                            slope_abs,
+                            speed,
+                            reverse_speed
+                        ) AS SELECT id, the_geom, cost, reverse_cost, "Nombre_Semafors", "Cost_Total_Semafor_Tram", source, target, "LENGTH", "SENTIT", "PENDENT_ABS", "VELOCITAT_PS", "VELOCITAT_PS_INV" FROM "SegmentsXarxaCarrers";
+                        """)
+            conn.commit()
+            print("stretch table created")
+    
+    def eliminaTaulesTemporals(self):
+        global versio_db
+        global cur
+        global conn
+
+        if versio_db == '1.0':
+            sql = "DROP TABLE IF EXISTS company;\n"
+            sql += "DROP TABLE IF EXISTS address;\n"
+            sql += "DROP TABLE IF EXISTS zone;\n"
+            sql += "DROP TABLE IF EXISTS parcel_temp;\n"
+            sql += "DROP TABLE IF EXISTS epigraph;\n"
+            sql += "DROP TABLE IF EXISTS stretch;\n"
+            cur.execute(sql)
+            conn.commit()
 
     def ompleCombos(self, combo, llista, predef, sort):
             """Aquesta funció omple els combos que li passem per paràmetres"""
