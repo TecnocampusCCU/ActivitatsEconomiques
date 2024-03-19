@@ -2021,10 +2021,15 @@ class ActivitatsEconomiques:
             trobat = True
             while trobat:
                 if (path != ''):
-                    if (os.path.exists(path + "/tr_illes.csv")):
+                    if versio_db == "1.0":
+                        ver = "v1"
+                    else:
+                        ver = "v2"
+                        
+                    if (os.path.exists(path + f"/tr_illes_{ver}.csv")):
                         trobat = False 
                         
-                        arxiu = open(path + "/tr_illes.csv", 'r')
+                        arxiu = open(path + f"/tr_illes_{ver}.csv", 'r')
                         arxiu.readline()
                         lines = arxiu.readlines()
                         try:
