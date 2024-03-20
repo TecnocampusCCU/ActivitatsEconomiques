@@ -2428,6 +2428,7 @@ class ActivitatsEconomiques:
         self.dlg.Progres.setVisible(False)
         QApplication.processEvents()
         self.eliminaTaulesCalcul(Fitxer)
+        self.eliminaTaulesTemporals()
         self.dlg.setEnabled(True)
     
     def eliminaTaulesCalcul(self,Fitxer):
