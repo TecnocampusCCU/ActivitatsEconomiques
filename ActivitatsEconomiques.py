@@ -88,7 +88,7 @@ micolor_ZI=None
 micolor_Graf=None
 Fitxer=""
 Path_Inicial=expanduser("~")
-Versio_modul="V_Q3.240319"
+Versio_modul="V_Q3.240412"
 
 progress=None
 
@@ -2124,6 +2124,7 @@ class ActivitatsEconomiques:
                 try:
                     uri.setConnection(host1,port1,nomBD1,usuari1,contra1)
                     print ("Connectat")
+                    self.database_version()
                     
                 except Exception as ex:
                             self.eliminaTaulesTemporals()
@@ -2659,6 +2660,13 @@ class ActivitatsEconomiques:
                         """)
             conn.commit()
             print("stretch table created")
+        else:
+            cur.execute("""
+                DROP TABLE IF EXISTS parcel_temp;
+                CREATE TABLE parcel_temp AS SELECT * FROM "parcel";
+            """)
+            conn.commit()
+            print("parcel_temp table created")
     
     def eliminaTaulesTemporals(self):
         global versio_db
@@ -2673,6 +2681,9 @@ class ActivitatsEconomiques:
             sql += "DROP TABLE IF EXISTS epigraph;\n"
             sql += "DROP TABLE IF EXISTS stretch;\n"
             cur.execute(sql)
+            conn.commit()
+        else:
+            cur.execute("DROP TABLE IF EXISTS parcel_temp;")
             conn.commit()
 
     def ompleCombos(self, combo, llista, predef, sort):
