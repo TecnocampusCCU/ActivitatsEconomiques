@@ -21,59 +21,35 @@
  *                                                                         *
  ***************************************************************************/
 """
-import sys
+import collections
+import datetime
 import os
-import processing
+import os.path
+import time
 from os.path import expanduser
+
+import processing
+import psycopg2
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
-from PyQt5.QtWidgets import QAction,QMessageBox,QTableWidgetItem, QApplication,QSizePolicy,QGridLayout,QDialogButtonBox,QFileDialog,QDockWidget,QProgressBar,QColorDialog,QToolBar
-from qgis.core import QgsMapLayer
-from qgis.core import QgsDataSourceUri
-from qgis.core import QgsVectorLayer
-from qgis.core import QgsVectorFileWriter
-from qgis.core import QgsGraduatedSymbolRenderer
-from qgis.core import QgsCategorizedSymbolRenderer
-from qgis.core import QgsGradientColorRamp
-from qgis.core import QgsProject
-from qgis.core import QgsRendererRange
-from qgis.core import QgsSymbol
-from qgis.core import QgsFillSymbol
-from qgis.core import QgsLineSymbol
-from qgis.core import QgsSymbolLayerRegistry
-from qgis.core import QgsRandomColorRamp
-from qgis.core import QgsRendererRangeLabelFormat
-from qgis.core import QgsProject
-from qgis.core import QgsLayerTreeLayer
-from qgis.core import QgsRenderContext
-from qgis.core import QgsPalLayerSettings
-from qgis.core import QgsTextFormat
-from qgis.core import QgsTextBufferSettings
-from qgis.core import QgsVectorLayerSimpleLabeling
-from qgis.core import QgsProcessingFeedback, Qgis
-from qgis.core import QgsProcessingFeedback, Qgis,QgsCoordinateReferenceSystem,QgsVectorLayerExporter
-from qgis.gui import QgsMessageBar
-from qgis.core import QgsFeature
-from qgis.core import QgsGeometry
-from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication
-
-import psycopg2
-import unicodedata
-import datetime
-import time
-from qgis.utils import iface
 from PyQt5.QtSql import *
-import datetime
-import time
-import qgis.utils
-import collections
+from PyQt5.QtWidgets import (QAction, QApplication, QColorDialog,
+                             QDialogButtonBox, QFileDialog, QGridLayout,
+                             QMessageBox, QProgressBar, QSizePolicy, QToolBar)
+from qgis.core import (Qgis, QgsCoordinateReferenceSystem, QgsDataSourceUri,
+                       QgsFeature, QgsFillSymbol, QgsGeometry,
+                       QgsGradientColorRamp, QgsGraduatedSymbolRenderer,
+                       QgsLayerTreeLayer, QgsProject, QgsRenderContext,
+                       QgsRendererRangeLabelFormat, QgsVectorLayer,
+                       QgsVectorLayerExporter)
+from qgis.gui import QgsMessageBar
+from qgis.PyQt.QtCore import QCoreApplication, QSettings, QTranslator
+from qgis.utils import iface
 
-# Initialize Qt resources from file resources.py
-from .resources import *
 # Import the code for the dialog
 from .ActivitatsEconomiques_dialog import ActivitatsEconomiquesDialog
-import os.path
-from email.header import UTF8
+# Initialize Qt resources from file resources.py
+from .resources import *
 
 nomBD1=""
 contra1=""
@@ -88,10 +64,8 @@ micolor_ZI=None
 micolor_Graf=None
 Fitxer=""
 Path_Inicial=expanduser("~")
-Versio_modul="V_Q3.240412"
-
+Versio_modul="V_Q3.240701"
 progress=None
-
 versio_db = ""
 
 class ActivitatsEconomiques:
@@ -280,7 +254,6 @@ class ActivitatsEconomiques:
         self.dlg.ColorZI.setStyleSheet('border:1px solid #000000; background-color: #aaffff')
         self.dlg.ColorZI.setAutoFillBackground(True)
         self.dlg.AutoGen.setVisible(False)
-        #self.dlg.VeureZI_panel.setStyleSheet('border:0px')
         self.dlg.VeureZI_panel.setVisible(False)
         self.dlg.barraCerca.clear()
         self.dlg.barraCerca.setStyleSheet("font-size: 14px; border: 1px #000000; background-color: #FFFFFF")
@@ -289,7 +262,6 @@ class ActivitatsEconomiques:
         self.dlg.ListaActivitatsDesc.clear()
         self.dlg.ListaActivitatsEpigraf.clear()
         self.dlg.ListaActivitatsEpigraf.setVisible(True)
-        #self.dlg.SSTab2.removeTab(1)
         self.dlg.texte_2.setText('1')
         self.dlg.texte_3.setText("Llista d'Epígrafs")
         self.dlg.EstatConnexio.setText('No connectat')
@@ -325,7 +297,6 @@ class ActivitatsEconomiques:
 
         QApplication.processEvents()
         
-        #self.dlg.EstatConnexio.setStyleSheet('border:1px solid #000000; background-color: #ffff7f')
         self.dlg.Transparencia_lbl.setText(str(self.dlg.Transparencia.value())+' %')
         if (os.name=='nt'):
             TEMPORARY_PATH=os.environ['TMP']
@@ -338,14 +309,10 @@ class ActivitatsEconomiques:
             self.iface.removePluginMenu(
                 self.tr('&CCU'),
                 action)
-            #self.iface.removeToolBarIcon(action)
             self.toolbar.removeAction(action)
-        # remove the toolbar
-        #del self.toolbar
 
     def populateComboBox(self,combo,list,predef,sort):
         """Aquesta funcio omple les pestanyes desplegables amb els paramtres que li passem per parametres"""
-        #procedure to fill specified combobox with provided list
         combo.blockSignals (True)
         combo.clear()
         model=QStandardItemModel(combo)
@@ -374,7 +341,6 @@ class ActivitatsEconomiques:
         s = QSettings() 
         s.beginGroup("PostgreSQL/connections")
         currentConnections = s.childGroups()
-        #print "connections: ",currentConnections
         s.endGroup()
         return currentConnections
 
@@ -386,7 +352,6 @@ class ActivitatsEconomiques:
         query = self.db.exec_(sql)
         query.next()
         res = str(query.value(0))
-        #print res
         return res
 
     def getGeometryFields(self,layer):
@@ -421,11 +386,9 @@ class ActivitatsEconomiques:
             fields.append(str(query.value(0)))
         if fields==[]:
             sql="SELECT attname, typname ,relname FROM pg_attribute a JOIN pg_class c on a.attrelid = c.oid JOIN pg_type t on a.atttypid = t.oid WHERE relname = '%s' and attnum >= 1;" % layer
-            #print sql
             query = self.db.exec_(sql)
             while (query.next()):
                 fields.append(str(query.value(0)))
-            #print fields
         return fields
     
     def getFieldsType(self,layer,field):
@@ -434,7 +397,6 @@ class ActivitatsEconomiques:
         query = self.db.exec_(sql)
         query.next()
         res = str(query.value(0))
-        #print res
         return res
 
     def getGeometryField(self,layer):
@@ -471,11 +433,6 @@ class ActivitatsEconomiques:
             if not query.value(0) in exclusionList : 
                 if self.getGeometryField(query.value(0)) != -1:
                     layers.append(query.value(0))
-        #sql="SELECT matviewname FROM pg_matviews where schemaname='%s';"  % schema
-        #query = self.db.exec_(sql)
-        #while (query.next()):
-        #    if self.getGeometryField(query.value(0)) != -1:
-        #        layers.append(query.value(0))
         layers.sort()
         return layers
 
@@ -508,7 +465,7 @@ class ActivitatsEconomiques:
             self.dlg.ListaActivitatsDesc.addItem(desc)
             self.dlg.ListaActivitatsDesc.item(index).setToolTip(str(row[1]))
         var=cur.fetchall()
-        return var;
+        return var
 
     def cercaEpigraf(self):
         """Aquesta funcio cerca els epigrafs que continguin la paraula clau que li passem"""
@@ -536,7 +493,7 @@ class ActivitatsEconomiques:
                 self.dlg.ListaActivitatsEpigraf.addItem(str(row[0]))
                 self.dlg.ListaActivitatsEpigraf.item(index).setToolTip(desc)
             var=cur.fetchall()
-            return var;
+            return var
             
         except:
             self.dlg.EstatConnexio.setStyleSheet('border:1px solid #000000; background-color: #ff7f7f')
@@ -562,14 +519,13 @@ class ActivitatsEconomiques:
         """Aquesta funcio mostra el widget de la part superior i mostra el numero d'elements seleccionats"""
         seleccio_noms=len(self.dlg.ListaActivitatsDesc.selectedItems())
         seleccio_numeros=len(self.dlg.ListaActivitatsEpigraf.selectedItems())
-        #self.dlg.Seleccio.setText('Seleccionats: Descripci�('+str(seleccio_noms)+') - Ep�graf('+str(seleccio_numeros)+")")
         self.bar.clearWidgets()
-        self.bar.pushMessage("Info", 'Seleccionats: Descripci�('+str(seleccio_noms)+') - Ep�graf('+str(seleccio_numeros)+")", level=Qgis.Info)
+        self.bar.pushMessage("Info", 'Seleccionats: Descripcio('+str(seleccio_noms)+') - Epigraf('+str(seleccio_numeros)+")", level=Qgis.Info)
         self.bar.layout().addWidget(self.dlg.btn_mostra_sel, 0, 0)
         self.dlg.btn_mostra_sel.setVisible(True)
 
     def on_seleccion_change_Desc(self,current, previous):
-        """Aquesta es una funcio auxiliar que controla l'aparen�a d'alguns elements de la interficie"""
+        """Aquesta es una funcio auxiliar que controla l'aparença d'alguns elements de la interficie"""
         seleccio_noms=len(self.dlg.ListaActivitatsDesc.selectedItems())
         seleccio_numeros=len(self.dlg.ListaActivitatsEpigraf.selectedItems())
         self.bar.clearWidgets()
@@ -578,7 +534,7 @@ class ActivitatsEconomiques:
         self.dlg.btn_mostra_sel.setVisible(True)
 
     def on_click_mostra_seleccio(self):
-        """Aquesta es una funcio auxiliar que controla l'aparen�a d'alguns elements de la interficie"""
+        """Aquesta es una funcio auxiliar que controla l'aparença d'alguns elements de la interficie"""
         llista_sel=self.dlg.ListaActivitatsDesc.selectedItems()
         llista_sel_EPIGRAF=self.dlg.ListaActivitatsEpigraf.selectedItems()
         llistat=""
@@ -591,13 +547,11 @@ class ActivitatsEconomiques:
                 num_epi="("+item.text()+")-"+item.toolTip()
                 llistat=llistat+num_epi+"\n"
             del llista_sel_EPIGRAF
-        #print llistat
-        #self.bar.pushMessage("Epigrafs seleccionats:", llistat, level=QGis.Info)
         QMessageBox.information(None, "Epigrafs seleccionats:",llistat )
     
     #@pyqtSlot()
     def on_click_totes(self):
-        """Aquesta es una funcio auxiliar que controla l'aparen�a d'alguns elements de la interficie"""
+        """Aquesta es una funcio auxiliar que controla l'aparença d'alguns elements de la interficie"""
         self.dlg.barraCerca.setText("")
         self.cercaDescripcio()
 
@@ -607,12 +561,11 @@ class ActivitatsEconomiques:
     
     #@pyqtSlot()
     def on_click_ColorTopos(self):
-        """Aquesta es una funcio auxiliar que controla l'aparen�a d'alguns elements de la interficie"""
+        """Aquesta es una funcio auxiliar que controla l'aparença d'alguns elements de la interficie"""
         global micolor_Topo
         aux = QColorDialog.getColor()
         if (aux.isValid()):
            micolor_Topo=aux 
-        #estilo='border:1px solid #000000; background-color: '+micolor_Topo.name().decode('utf8')
         estilo='border:1px solid #000000; background-color: '+micolor_Topo.name()
         self.dlg.ColorTopos.setStyleSheet(estilo)
         self.dlg.ColorTopos.setAutoFillBackground(True)
@@ -620,23 +573,21 @@ class ActivitatsEconomiques:
     
     #@pyqtSlot()
     def on_click_ColorZI(self):
-        """Aquesta es una funcio auxiliar que controla l'aparen�a d'alguns elements de la interficie"""
+        """Aquesta es una funcio auxiliar que controla l'aparença d'alguns elements de la interficie"""
         global micolor_ZI
         aux = QColorDialog.getColor()
         if (aux.isValid()):
            micolor_ZI=aux 
-        #estilo='border:1px solid #000000; background-color: '+micolor_ZI.name().decode('utf8')
         estilo='border:1px solid #000000; background-color: '+micolor_ZI.name()
         self.dlg.ColorZI.setStyleSheet(estilo)
         self.dlg.ColorZI.setAutoFillBackground(True)
     
     def on_click_ColorGraf(self):
-        """Aquesta es una funcio auxiliar que controla l'aparen�a d'alguns elements de la interficie"""
+        """Aquesta es una funcio auxiliar que controla l'aparença d'alguns elements de la interficie"""
         global micolor_Graf
         aux = QColorDialog.getColor()
         if (aux.isValid()):
            micolor_Graf=aux 
-        #estilo='border:1px solid #000000; background-color: '+micolor_Graf.name().decode('utf8')
         estilo='border:1px solid #000000; background-color: '+micolor_Graf.name()
         self.dlg.ColorGraf.setStyleSheet(estilo)
         self.dlg.ColorGraf.setAutoFillBackground(True)
@@ -679,13 +630,11 @@ class ActivitatsEconomiques:
         """Aquesta es una funcio fa una crida a una funci� auxiliar"""
         self.Canvia_label_ZI()
         
-        
-        
     def on_Change_ComboGraf(self, state):
         """
         En el moment en que es modifica la opcio escollida 
         del combo o desplegable de la capa de punts,
-        automÃ ticament comprova els camps de la taula escollida.
+        automaticament comprova els camps de la taula escollida.
         """
         try:
             capa=self.dlg.comboGraf.currentText()
@@ -787,7 +736,7 @@ class ActivitatsEconomiques:
 #       *****************************************************************************************************************
         XarxaCarrers = self.dlg.comboGraf.currentText()
         sql_1="DROP TABLE IF EXISTS \"Xarxa_Graf\";\n"
-        """ Es fa una copia de la taula que cont� el graf i s'afegeixen els camps cost i reverse_cost en funci� del que es necessiti, es crear� taula local temporal per evitar problemes de concurrencia"""
+        """ Es fa una copia de la taula que conte el graf i s'afegeixen els camps cost i reverse_cost en funcio del que es necessiti, es creara taula local temporal per evitar problemes de concurrencia"""
         sql_1+="CREATE local temporary TABLE \"Xarxa_Graf\" as (SELECT * FROM \"" + XarxaCarrers + "\");\n"
         if (self.dlg.GrafCombo.currentText()=="Distancia"):
             """S'aplica com a cost tant directe com invers el valor de la longitud del segment"""
@@ -795,14 +744,11 @@ class ActivitatsEconomiques:
         else:
             if (self.dlg.CostInvers_chk.isChecked()):
                 """S'aplica com a 'cost' el valor del camp 'cost directe', i a 'reverse_cost' el valor del camp 'cost_invers"""
-                #sql_1+="UPDATE \"Xarxa_Graf\" set \"cost\"=\"Cost_Directe\", \"reverse_cost\"=\"Cost_Invers\";\n"
             else:
                 """S'aplica com a 'cost' i 'reverse_cost' el valor del camp 'cost directe'"""
                 sql_1+="UPDATE \"Xarxa_Graf\" set \"reverse_cost\"=\"cost\";\n"
-                #sql_1+="UPDATE \"Xarxa_Graf\" set \"cost\"=\"Cost_Directe\", \"reverse_cost\"=\"Cost_Directe\";\n"
             if (self.dlg.CostNusos.isChecked()):
                 """Es suma al camp 'cost' i a 'reverse_cost' el valor dels semafors sempre i quan estigui la opci� marcada"""
-                #sql_1+="UPDATE \"Xarxa_Graf\" set \"cost\"=\"cost\"+(\"Cost_Total_Semafor_Tram\"), \"reverse_cost\"=\"reverse_cost\"+(\"Cost_Total_Semafor_Tram\");\n"
                 sql_1+="UPDATE \"Xarxa_Graf\" set \"cost\"=\"cost\"+(\"total_cost_semaphore\"), \"reverse_cost\"=\"reverse_cost\"+(\"total_cost_semaphore\");\n"
         #print sql_1
         try:
@@ -837,14 +783,13 @@ class ActivitatsEconomiques:
         """Es crea la taula punts_interes_tmp seleccionant el centroide de la entitat seleccionada, utilizant un radi fix"""
         sql_1+="CREATE local temporary TABLE punts_interes_tmp as (SELECT ST_Centroid(tmp.\""+geometria+"\") geom,tmp.\"ogc_fid\" as pid from ("+sql_buff+") tmp);\n"
             
-        #sql_1+="ALTER TABLE punts_interes_tmp ADD COLUMN pid BIGSERIAL PRIMARY KEY;\n"
         sql_1+="ALTER TABLE punts_interes_tmp ADD COLUMN     x FLOAT;\n"
         sql_1+="ALTER TABLE punts_interes_tmp ADD COLUMN     y FLOAT;\n"
         sql_1+="ALTER TABLE punts_interes_tmp ADD COLUMN     edge_id BIGINT;\n"
         sql_1+="ALTER TABLE punts_interes_tmp ADD COLUMN     side CHAR;\n"
         sql_1+="ALTER TABLE punts_interes_tmp ADD COLUMN     fraction FLOAT;\n"
         sql_1+="ALTER TABLE punts_interes_tmp ADD COLUMN     newPoint geometry;\n"
-        #print sql_1
+
         try:
             cur.execute(sql_1)
             conn.commit()
@@ -875,7 +820,6 @@ class ActivitatsEconomiques:
         sql_1="UPDATE \"punts_interes_tmp\" set \"edge_id\"=tram_proper.\"tram_id\" from (SELECT distinct on(Poi.pid) Poi.pid As Punt_id,Sg.id as Tram_id, ST_Distance(Sg.geom,Poi.geom)  as dist FROM \"Xarxa_Graf\" as Sg,\"punts_interes_tmp\" AS Poi ORDER BY  Poi.pid,ST_Distance(Sg.geom,Poi.geom),Sg.id) tram_proper where \"punts_interes_tmp\".\"pid\"=tram_proper.\"punt_id\";\n"
         """Es calcula la fraccio del tram que on esta situat la projecci� del punt d'interes"""
         sql_1+="UPDATE \"punts_interes_tmp\" SET fraction = ST_LineLocatePoint(e.geom, \"punts_interes_tmp\".geom),newPoint = ST_LineInterpolatePoint(e.geom, ST_LineLocatePoint(e.geom, \"punts_interes_tmp\".geom)) FROM \"Xarxa_Graf\" AS e WHERE \"punts_interes_tmp\".\"edge_id\" = e.id;\n"
-        #print sql_1
         try:
             cur.execute(sql_1)
             conn.commit()
@@ -907,7 +851,6 @@ class ActivitatsEconomiques:
 
         """Creació de la taula 'tbl_punts_finsl_tmp' on es tindrà tots els nodes de la xarxa que son a dins del radi fix d'acci� indicat"""
         sql_1+="CREATE local temporary TABLE tbl_punts_finals_tmp AS(SELECT node,agg_cost,start_vid FROM pgr_withPointsDD('SELECT id, source, target, cost, reverse_cost FROM \"Xarxa_Graf\" ORDER BY \"Xarxa_Graf\".id','SELECT (pid::integer) as pid, edge_id, fraction, side from \"punts_interes_tmp\"',array(select (\"pid\"::integer)*(-1) from \"punts_interes_tmp\"),"+self.dlg.Radi_ZI.text()+",driving_side := 'b',details := false));\n"
-        #print (sql_1)
         
         try:
             cur.execute(sql_1)
@@ -939,11 +882,11 @@ class ActivitatsEconomiques:
 #       *****************************************************************************************************************
 #       INICI DE LA CREACIO DE LA TAULA 'GEO_PUNTS_FINALS_TMP' QUE CONTINDRA ELS NODES DE LA XARXA QUE SON A DINS DEL RADI 
 #       *****************************************************************************************************************
+
         sql_1="DROP table if exists geo_punts_finals_tmp;\n"
         """Creació de la taula 'geo_punts_finals_tmp' on estan tots els nodes de la xarxa que son a dins del radi fix amb la geometria inclosa"""
         sql_1+="CREATE local temporary TABLE geo_punts_finals_tmp as (select \"" + XarxaCarrers + "_vertices_pgr\".*,\"tbl_punts_finals_tmp\".\"agg_cost\", \"tbl_punts_finals_tmp\".\"start_vid\", "+self.dlg.Radi_ZI.text()+" from \"" + XarxaCarrers + "_vertices_pgr\",\"tbl_punts_finals_tmp\" where \"" + XarxaCarrers + "_vertices_pgr\".\"id\" =\"tbl_punts_finals_tmp\".\"node\" order by \"tbl_punts_finals_tmp\".\"start_vid\" desc,\"tbl_punts_finals_tmp\".\"agg_cost\");\n"
-        #sql_1+="CREATE local temporary TABLE geo_punts_finals_tmp as (select \"SegmentsXarxaCarrers_vertices_pgr\".*,\"tbl_punts_finals_tmp\".\"agg_cost\", \"tbl_punts_finals_tmp\".\"start_vid\" from \"SegmentsXarxaCarrers_vertices_pgr\",\"tbl_punts_finals_tmp\" where \"SegmentsXarxaCarrers_vertices_pgr\".\"id\" =\"tbl_punts_finals_tmp\".\"node\");\n"
-        #print sql_1
+
         try:
             cur.execute(sql_1)
             conn.commit()
@@ -968,31 +911,28 @@ class ActivitatsEconomiques:
             self.dlg.setEnabled(True)
                             
             return "ERROR"
+        
 #       *****************************************************************************************************************
 #       FI DE LA CREACIO DE LA TAULA 'GEO_PUNTS_FINALS_TMP' QUE CONTINDRA ELS NODES DE LA XARXA QUE SON A DINS DEL RADI 
 #       *****************************************************************************************************************
             
-        
 #       *****************************************************************************************************************
 #       INICI DE LA CREACIO DE LA TAULA 'TRAMS_FINALS_TMP' QUE CONTINDRA ELS TRAMS QUE FORMEN PART DEL RADI D'ACCIO INDICAT 
 #       *****************************************************************************************************************
+
         sql_1="DROP table IF EXISTS trams_finals_tmp;\n"
         if (self.dlg.GrafCombo.currentText()=="Distancia"):
             """Si s'ha escollit calcula mitjançant distancia """
-            #sql per distancia
             """Creació de la taula que contindrà els trams que formen part del radi d'acció indicat, si el radi escollit es un radi fix"""
             sql_1+="CREATE local temporary TABLE trams_finals_tmp as (select \"Xarxa_Graf\".\"id\",\"Xarxa_Graf\".\"geom\",\"geo_punts_finals_tmp\".\"id\" as node,\"geo_punts_finals_tmp\".\"agg_cost\" as coste,("+self.dlg.Radi_ZI.text()+"-\"geo_punts_finals_tmp\".\"agg_cost\") as falta,\"geo_punts_finals_tmp\".\"start_vid\" as id_punt, (select case when ("+self.dlg.Radi_ZI.text()+"-\"geo_punts_finals_tmp\".\"agg_cost\")/ST_Length(\"Xarxa_Graf\".\"geom\")<=1 then ("+self.dlg.Radi_ZI.text()+"-\"geo_punts_finals_tmp\".\"agg_cost\")/ST_Length(\"Xarxa_Graf\".\"geom\") when ("+self.dlg.Radi_ZI.text()+"-\"geo_punts_finals_tmp\".\"agg_cost\")/ST_Length(\"Xarxa_Graf\".\"geom\")>1 then (1) end) as fraccio from \"Xarxa_Graf\",\"geo_punts_finals_tmp\" where ST_DWithin(\"geo_punts_finals_tmp\".\"the_geom\",\"Xarxa_Graf\".\"geom\",1)=TRUE);\n"
         else:
             """Si s'ha escollit calcula mitjançant Temps """
             if (self.dlg.CostInvers_chk.isChecked()):
-                #sql per temps i cost invers
                 """Creació de la taula que contindrà els trams que formen part del radi d'acció indicat, si el radi escollit es un radi fix"""
                 sql_1+="CREATE local temporary TABLE trams_finals_tmp as (select \"Xarxa_Graf\".\"id\",\"Xarxa_Graf\".\"cost\",\"Xarxa_Graf\".\"reverse_cost\",\"Xarxa_Graf\".\"geom\",\"geo_punts_finals_tmp\".\"id\" as node,\"geo_punts_finals_tmp\".\"agg_cost\" as coste,("+self.dlg.Radi_ZI.text()+"-\"geo_punts_finals_tmp\".\"agg_cost\") as falta,\"geo_punts_finals_tmp\".\"start_vid\" as id_punt, (select case when (("+self.dlg.Radi_ZI.text()+"-\"geo_punts_finals_tmp\".\"agg_cost\")/(CASE WHEN \"geo_punts_finals_tmp\".\"id\"=\"Xarxa_Graf\".\"target\" THEN \"Xarxa_Graf\".\"reverse_cost\" ELSE \"Xarxa_Graf\".\"cost\" END))<=1 then (("+self.dlg.Radi_ZI.text()+"-\"geo_punts_finals_tmp\".\"agg_cost\")/(CASE WHEN \"geo_punts_finals_tmp\".\"id\"=\"Xarxa_Graf\".\"target\" THEN \"Xarxa_Graf\".\"reverse_cost\" ELSE \"Xarxa_Graf\".\"cost\" END)) when (("+self.dlg.Radi_ZI.text()+"-\"geo_punts_finals_tmp\".\"agg_cost\")/(CASE WHEN \"geo_punts_finals_tmp\".\"id\"=\"Xarxa_Graf\".\"target\" THEN \"Xarxa_Graf\".\"reverse_cost\" ELSE \"Xarxa_Graf\".\"cost\" END))>1 then (1) end) as fraccio from \"Xarxa_Graf\",\"geo_punts_finals_tmp\" where ST_DWithin(\"geo_punts_finals_tmp\".\"the_geom\",\"Xarxa_Graf\".\"geom\",1)=TRUE);\n"
             else:
-                #sql per temps i sense cost invers
                 """Creació de la taula que contindrà els trams que formen part del radi d'acció indicat, si el radi escollit es un radi fix"""
                 sql_1+="CREATE local temporary TABLE trams_finals_tmp as (select \"Xarxa_Graf\".\"id\",\"Xarxa_Graf\".\"cost\",\"Xarxa_Graf\".\"reverse_cost\",\"Xarxa_Graf\".\"geom\",\"geo_punts_finals_tmp\".\"id\" as node,\"geo_punts_finals_tmp\".\"agg_cost\" as coste,("+self.dlg.Radi_ZI.text()+"-\"geo_punts_finals_tmp\".\"agg_cost\") as falta,\"geo_punts_finals_tmp\".\"start_vid\" as id_punt, (select case when (("+self.dlg.Radi_ZI.text()+"-\"geo_punts_finals_tmp\".\"agg_cost\")/(\"Xarxa_Graf\".\"cost\"))<=1 then (("+self.dlg.Radi_ZI.text()+"-\"geo_punts_finals_tmp\".\"agg_cost\")/(\"Xarxa_Graf\".\"cost\")) when (("+self.dlg.Radi_ZI.text()+"-\"geo_punts_finals_tmp\".\"agg_cost\")/(\"Xarxa_Graf\".\"cost\"))>1 then (1) end) as fraccio from \"Xarxa_Graf\",\"geo_punts_finals_tmp\" where ST_DWithin(\"geo_punts_finals_tmp\".\"the_geom\",\"Xarxa_Graf\".\"geom\",1)=TRUE);\n"
-        #print sql_1
         try:
             cur.execute(sql_1)
             conn.commit()
@@ -1014,8 +954,8 @@ class ActivitatsEconomiques:
             self.dlg.lblEstatConn.setText('Connectat')
             self.dlg.lblEstatConn.setStyleSheet('border:1px solid #000000; background-color: #7fff7f')
             self.dlg.setEnabled(True)
-                            
             return "ERROR"        
+        
 #       *****************************************************************************************************************
 #       FI DE LA CREACIO DE LA TAULA 'TRAMS_FINALS_TMP' QUE CONTINDRA ELS TRAMS QUE FORMEN PART DEL RADI D'ACCIO INDICAT 
 #       *****************************************************************************************************************
@@ -1023,6 +963,7 @@ class ActivitatsEconomiques:
 #       *****************************************************************************************************************
 #       INICI FUNCIO PER CREAR ELS TRAMS FINALS AMB LA FRACCIO DE TRAM QUE LI CORRESPON 
 #       *****************************************************************************************************************
+
         sql_1="DROP FUNCTION IF EXISTS Cobertura();\n"
         sql_1+="CREATE OR REPLACE FUNCTION Cobertura() RETURNS SETOF trams_finals_tmp AS\n"
         sql_1+="$BODY$\n"
@@ -1060,7 +1001,6 @@ class ActivitatsEconomiques:
         self.dlg.Progres.setValue(45)
         QApplication.processEvents()
 
-        #print sql_1
         try:
             cur.execute(sql_1)
             conn.commit()
@@ -1104,6 +1044,7 @@ class ActivitatsEconomiques:
             self.dlg.lblEstatConn.setStyleSheet('border:1px solid #000000; background-color: #7fff7f')
             self.dlg.setEnabled(True)
             return "ERROR"
+        
 #       *****************************************************************************************************************
 #       FI FUNCIO PER CREAR ELS TRAMS FINALS AMB LA FRACCIO DE TRAM QUE LI CORRESPON 
 #       *****************************************************************************************************************
@@ -1111,7 +1052,8 @@ class ActivitatsEconomiques:
 #       *****************************************************************************************************************
 #       INICI ACTUALITZACIO DE LA FRACCIO DELS TRAMS INICIALS 
 #       *****************************************************************************************************************
-        """Actualitzaci� de la fracci� dels trams inicials  """
+
+        """Actualitzacio de la fraccio dels trams inicials"""
         sql_1="update \"fraccio_trams_raw\" set \"fraccio_inicial\"=\"punts_interes_tmp\".\"fraction\" from \"punts_interes_tmp\" where \"id_tram\"=\"edge_id\""
         try:
             cur.execute(sql_1)
@@ -1135,7 +1077,8 @@ class ActivitatsEconomiques:
             self.dlg.lblEstatConn.setStyleSheet('border:1px solid #000000; background-color: #7fff7f')
             self.dlg.setEnabled(True)
                             
-            return "ERROR"        
+            return "ERROR"   
+
 #       *****************************************************************************************************************
 #       FI ACTUALITZACIO DE LA FRACCIO DELS TRAMS INICIALS 
 #       *****************************************************************************************************************
@@ -1143,7 +1086,8 @@ class ActivitatsEconomiques:
 #       *****************************************************************************************************************
 #       INICI ACTUALITZACIO DELS VALORS DE COST DIRECTE, TARGET, COST INVERS DELS TRAMS INICIALS 
 #       *****************************************************************************************************************
-        """Actualitzaci� dels valors de cost directe, target, cost invers dels trams inicials"""
+
+        """Actualitzacio dels valors de cost directe, target, cost invers dels trams inicials"""
         sql_1="update \"fraccio_trams_raw\" set \"cost_directe\"=\"Xarxa_Graf\".\"cost\",\"target\"=\"Xarxa_Graf\".\"target\",\"cost_invers\"=\"Xarxa_Graf\".\"reverse_cost\" from \"Xarxa_Graf\" where \"id_tram\"=\"id\""
 
         try:
@@ -1178,6 +1122,7 @@ class ActivitatsEconomiques:
 #       *****************************************************************************************************************
 #       INICI CALCUL DE LA FRACCIO DE CADA TRAM FINAL 
 #       *****************************************************************************************************************
+
         if (self.dlg.GrafCombo.currentText()!="Distancia"):
             """Calcul del la fracci� final de cada tram en el cas d'haber escollit temps"""
             cost_tram="(CASE WHEN \"geo_punts_finals_tmp\".\"id\"=\"fraccio_trams_raw\".\"target\" THEN \"fraccio_trams_raw\".\"cost_invers\" ELSE \"fraccio_trams_raw\".\"cost_directe\" END)"
@@ -1231,6 +1176,7 @@ class ActivitatsEconomiques:
 #       *****************************************************************************************************************
 #       INICI MODIFICACIO DE LA GEOMETRIA DELS TRAMS FINALS SEGONS LA FRACCIO CALCULADA 
 #       *****************************************************************************************************************
+
         """Es modifiquen els trams finals del trajecte segons el que falti per arribar al cost desitjat"""
         sql_1="update \"fraccio_trams_raw\" set \"geom\"=final.\"geom\"" 
         sql_1+="from"
@@ -1272,7 +1218,8 @@ class ActivitatsEconomiques:
             self.dlg.lblEstatConn.setStyleSheet('border:1px solid #000000; background-color: #7fff7f')
             self.dlg.setEnabled(True)
                             
-            return "ERROR"        
+            return "ERROR"       
+    
 #       *****************************************************************************************************************
 #       FI MODIFICACIO DE LA GEOMETRIA DELS TRAMS FINALS SEGONS LA FRACCIO CALCULADA 
 #       *****************************************************************************************************************
@@ -1280,9 +1227,9 @@ class ActivitatsEconomiques:
 #       *****************************************************************************************************************
 #       INICI INSERTAR ELS TRAMS INICIALS DELS QUE PARTIRA EL GRAF 
 #       *****************************************************************************************************************
+
         """S'afegeixen els trams inicials de cada graf per modificarlos posteriorment"""
         sql_1="insert into \"fraccio_trams_raw\" (select SX.\"geom\",PI.\"pid\" as punt_id,SX.\"id\"as id_tram,999 as fraccio,SX.\"source\" as node,PI.\"fraction\" as fraccio_inicial,SX.\"cost\",SX.\"reverse_cost\" from \"Xarxa_Graf\" SX inner join (Select \"edge_id\",(\"pid\"::integer) as pid,\"fraction\" from \"punts_interes_tmp\") PI on SX.\"id\"=PI.\"edge_id\");\n"
-        #print (sql_1)
         try:
             cur.execute(sql_1)
             conn.commit()
@@ -1306,6 +1253,7 @@ class ActivitatsEconomiques:
             self.dlg.setEnabled(True)
                             
             return "ERROR"        
+        
 #       *****************************************************************************************************************
 #       FI INSERTAR ELS TRAMS INICIALS DELS QUE PARTIRA EL GRAF 
 #       *****************************************************************************************************************
@@ -1313,6 +1261,7 @@ class ActivitatsEconomiques:
 #       *****************************************************************************************************************
 #       INICI MODIFICACIO DELS TRAMS INICIALS EN EL CAS QUE LA DISTANCIA A RECORRER SIGUI MES PETITA QUE EL PROPI TRAM 
 #       *****************************************************************************************************************
+
         if (self.dlg.GrafCombo.currentText()=="Distancia"):
             """ Calcul amb distancia i radi variable"""
 
@@ -1324,7 +1273,6 @@ class ActivitatsEconomiques:
             sql_1+="(case when (FT.\"fraccio_inicial\"+("+self.dlg.Radi_ZI.text()+"/"+cost_tram+"))<1 then (FT.\"fraccio_inicial\"+("+self.dlg.Radi_ZI.text()+"/"+cost_tram+")) else 1 end)"
             sql_1+=") as geom, FT.\"punt_id\",FT.\"id_tram\",FT.\"fraccio\" "
             sql_1+="from \"fraccio_trams_raw\"FT inner join (select SX.\"geom\" as geom,SX.\"id\" as tram_xarxa from \"Xarxa_Graf\" SX, \"punts_interes_tmp\" PI where SX.\"id\"=PI.\"edge_id\") SXI on FT.\"id_tram\"=SXI.tram_xarxa where FT.\"fraccio\"=999) final"
-            #sql_1+="from \"fraccio_trams_raw\"FT inner join (select SX.\"geom\" as geom,SX.\"id\" as tram_xarxa from \"SegmentsXarxaCarrers\" SX, \"punts_interes_tmp\" PI where SX.\"id\"=PI.\"edge_id\") SXI on FT.\"id_tram\"=SXI.tram_xarxa where FT.\"fraccio\"=999) final"
             sql_1+=" where \"fraccio_trams_raw\".\"punt_id\"=final.\"punt_id\" and \"fraccio_trams_raw\".\"fraccio\"=999;\n"
         else:
             """ Calcul amb temps i radi variable"""
@@ -1337,7 +1285,6 @@ class ActivitatsEconomiques:
             sql_1+="FT.\"fraccio_inicial\""
             sql_1+=") as geom, FT.\"punt_id\" "
             sql_1+="from \"fraccio_trams_raw\"FT inner join (select SX.\"geom\" as geom,SX.\"id\" as tram_xarxa from \"Xarxa_Graf\" SX, \"punts_interes_tmp\" PI where SX.\"id\"=PI.\"edge_id\") SXI on FT.\"id_tram\"=SXI.tram_xarxa where FT.\"fraccio\"=999"
-            #sql_1+="from \"fraccio_trams_raw\"FT inner join (select SX.\"geom\" as geom,SX.\"id\" as tram_xarxa from \"SegmentsXarxaCarrers\" SX, \"punts_interes_tmp\" PI where SX.\"id\"=PI.\"edge_id\") SXI on FT.\"id_tram\"=SXI.tram_xarxa where FT.\"fraccio\"=999"
             sql_1+="UNION "
             sql_1+="select ST_LineSubstring((SXI.\"geom\"),"
             sql_1+="FT.\"fraccio_inicial\""
@@ -1345,7 +1292,6 @@ class ActivitatsEconomiques:
             sql_1+="(case when (FT.\"fraccio_inicial\"+("+self.dlg.Radi_ZI.text()+"/(FT.\"cost_directe\")))<1 then (FT.\"fraccio_inicial\"+("+self.dlg.Radi_ZI.text()+"/(FT.\"cost_directe\"))) else 1 end)"
             sql_1+=") as geom, FT.\"punt_id\" "
             sql_1+="from \"fraccio_trams_raw\"FT inner join (select SX.\"geom\" as geom,SX.\"id\" as tram_xarxa from \"Xarxa_Graf\" SX, \"punts_interes_tmp\" PI where SX.\"id\"=PI.\"edge_id\") SXI on FT.\"id_tram\"=SXI.tram_xarxa where FT.\"fraccio\"=999) TOT GROUP BY TOT.\"punt_id\") final"
-            #sql_1+="from \"fraccio_trams_raw\"FT inner join (select SX.\"geom\" as geom,SX.\"id\" as tram_xarxa from \"SegmentsXarxaCarrers\" SX, \"punts_interes_tmp\" PI where SX.\"id\"=PI.\"edge_id\") SXI on FT.\"id_tram\"=SXI.tram_xarxa where FT.\"fraccio\"=999) TOT GROUP BY TOT.\"punt_id\") final"
             sql_1+=" where \"fraccio_trams_raw\".\"punt_id\"=final.\"punt_id\" and \"fraccio_trams_raw\".\"fraccio\"=999;\n"
         
         try:
@@ -1370,7 +1316,8 @@ class ActivitatsEconomiques:
             self.dlg.lblEstatConn.setStyleSheet('border:1px solid #000000; background-color: #7fff7f')
             self.dlg.setEnabled(True)
                             
-            return "ERROR"        
+            return "ERROR"   
+
 #       *****************************************************************************************************************
 #       FI MODIFICACIO DELS TRAMS INICIALS EN EL CAS QUE LA DISTANCIA A RECORRER SIGUI MES PETITA QUE EL PROPI TRAM 
 #       *****************************************************************************************************************
@@ -1379,6 +1326,7 @@ class ActivitatsEconomiques:
 #       *****************************************************************************************************************
 #       INICI CREACIO TAULA FRACCIO_TRAMS_TMP I ELIMINACIO DE TRAMS DUPLICATS 
 #       *****************************************************************************************************************
+
         sql_1="DROP TABLE IF EXISTS fraccio_trams_tmp;\n"
 
         """Eliminaci� de trams duplicats"""
@@ -1440,6 +1388,7 @@ class ActivitatsEconomiques:
             self.dlg.setEnabled(True)
                             
             return "ERROR"  
+        
 #       *****************************************************************************************************************
 #       FI CREACIO TAULA GRAF_UTILITZAT_(DATA) QUE CONTINDRA ELS TRAMS UNITS DEL GRAF 
 #       *****************************************************************************************************************
@@ -1447,6 +1396,7 @@ class ActivitatsEconomiques:
 #       *****************************************************************************************************************
 #       INICI CREACIO TAULA BUFFER_FINAL_(DATA) QUE CONTINDRA EL BUFFER DE LA UNIO DELS TRAMS 
 #       *****************************************************************************************************************
+
         sql_1+="drop table if exists \"Buffer_Final_"+Fitxer+"\";\n"
         sql_1+="CREATE TABLE \"Buffer_Final_"+Fitxer+"\" AS (Select ST_Union(TOT.geom) geom, TOT.\"punt_id\" from (Select ST_Buffer(geom,"+self.dlg.Radi_ZI_3.text()+") geom,punt_id from fraccio_trams_tmp)TOT group by TOT.\"punt_id\");\n"
             
@@ -1473,9 +1423,11 @@ class ActivitatsEconomiques:
             self.dlg.setEnabled(True)
                             
             return "ERROR"
+        
 #       *****************************************************************************************************************
 #       FI CREACIO TAULA BUFFER_FINAL_(DATA) QUE CONTINDRA EL BUFFER DE LA UNIO DELS TRAMS 
 #       *****************************************************************************************************************
+
         try:
             if not(self.dlg.MostrarGraf_chk.isChecked()):
                 sql_1="drop table if exists Graf_utilitzat_"+Fitxer+";\n"
@@ -1515,7 +1467,6 @@ class ActivitatsEconomiques:
         QApplication.processEvents()
         network_lyr = QgsVectorLayer(uri2.uri(False), "xarxa", "postgres")
         QApplication.processEvents()
-        #if (punts_lyr.isValid() and network_lyr.isValid()):
 
         parameters = {'INPUT': network_lyr,
                       'START_POINTS': punts_lyr,
@@ -1534,8 +1485,7 @@ class ActivitatsEconomiques:
                       'OUTPUT': 'memory:'}
         
         linias_graf = processing.run('qgis:serviceareafromlayer', parameters)
-        #result_buffer = processing.run('native:buffer', {"INPUT": network_lyr,
-        # native:dissolve
+
         result_dissolve = processing.run('native:dissolve', {"INPUT": linias_graf['OUTPUT_LINES'],
                                                              "FIELD": 'id',
                                                              "OUTPUT": 'memory:'})        
@@ -1549,7 +1499,6 @@ class ActivitatsEconomiques:
                                                          "MITER_LIMIT":1,
                                                          "DISSOLVE":0,
                                                          "OUTPUT": 'memory:'})
-                                                         #"OUTPUT": 'postgres: table="public"."testpep" (geom) '+uri2.connectionInfo()})
         result_buffer_dissolve = processing.run('native:dissolve', {"INPUT": result_buffer['OUTPUT'],
                                                                     "FIELD": 'id',
                                                                     "OUTPUT": 'memory:'})
@@ -1561,16 +1510,13 @@ class ActivitatsEconomiques:
     def troba_posicio(self,id,llista_id):
         resultat=[]
         for j,x in enumerate(llista_id):
-            #print (x)
             if id==x:
-                #print ("id:"+str(id))
                 resultat.append(j)
         return resultat
         
     def calcula_distancies(self,linea,posicio,punts):
         resultat=[]
         for i in range(len(posicio)):
-            #print (posicio[i])
             resultat.append([posicio[i],self.troba_distancia(linea,punts[posicio[i]])])
         resultat=sorted(resultat, key=lambda x: x[1])
         return resultat
@@ -1727,8 +1673,6 @@ class ActivitatsEconomiques:
             outputs['Direccio'] = processing.run('qgis:fieldcalculator', alg_params)        
         return outputs['Direccio']['OUTPUT']
                 
-        #print (outputs)
-
     def calcul_graf3(self,sql_punts,sql_xarxa,uri2):
         #               *****************************************************************************************************************
         #               INICI CARREGA DE LES zone, PARCELES O PORTALS QUE QUEDEN AFECTATS PEL BUFFER DEL GRAF 
@@ -1758,14 +1702,10 @@ class ActivitatsEconomiques:
         }
         outputs['ReproyectarCapa'] = processing.run('native:reprojectlayer', alg_params)
         
-        #p_lyr = punts_lyr 
         p_lyr = outputs['ReproyectarCapa']['OUTPUT']
         graf = network_lyr
         
         l_lyr=self.Calcula_VEL_KMH(graf,epsg,uri2)
-        
-        #QgsProject.instance().addMapLayer(l_lyr)
-        
         
         lines_features = [ line_feature for line_feature in l_lyr.getFeatures() ] 
         points_features = [ point_feature for point_feature in p_lyr.getFeatures() ]
@@ -1775,7 +1715,6 @@ class ActivitatsEconomiques:
         for field in lines_features[0].fields():
             lista.append(field)
         
-        #print (lista)
         pr.addAttributes(lista)
             
         vl.updateFields()
@@ -1796,21 +1735,13 @@ class ActivitatsEconomiques:
             Trams1_id.append(lineas.index(sorted(lineas)[1])+1)
         Trams_id.append([0,Trams0_id])
         Trams_id.append([1,Trams1_id])
-        #print(Trams0_id)
-        #print(Trams1_id)
-        #print(Trams_id)
-        #print(Trams_id[0][1])
-        #print(Trams_id[1][1])
         
         repetits.append([x for x, y in collections.Counter(Trams_id[0][1]).items() if y > 1])
         repetits.append([x for x, y in collections.Counter(Trams_id[1][1]).items() if y > 1])
-        #print(repetits)
         
         trams_fets=[]
         feat_temp = QgsFeature()
         for index_punt,p in enumerate(points_features):
-            #print(index_punt)
-            #print (repetits)
             for i in range(2):
                 linea_cut=lines_features[Trams_id[i][1][index_punt]-1]
                 if ([linea_cut.id()]) not in repetits:
@@ -1821,21 +1752,17 @@ class ActivitatsEconomiques:
                     longitud=round(linea_cut.geometry().length(),3)
                     lp=linea_cut.geometry().constGet()
                     newgeom=QgsGeometry(lp.curveSubstring(start,distancia))
-                    #print(newgeom)
                     f=QgsFeature()
                     f.setAttributes(linea_cut.attributes())
                     f.setGeometry(newgeom)
                     feats.append(f)
         
                     newgeom=QgsGeometry(lp.curveSubstring(distancia,longitud))
-                    #print(newgeom)
                     f=QgsFeature()
                     f.setAttributes(linea_cut.attributes())
                     f.setGeometry(newgeom)
                     feats.append(f)
                 else:
-                    #print("REPE")
-                    #break
                     id_tram_Read=linea_cut.id()
                     if id_tram_Read not in trams_fets:
                         trams_fets.append(id_tram_Read)
@@ -1845,11 +1772,8 @@ class ActivitatsEconomiques:
                         llista_dist=self.calcula_distancies(linea_cut,posicio,points_features)
                         #En llista_dist estan ordenat de menor distancia a major distancia
                         
-                        #break
                         start=0
-                        #distancia=troba_distancia(linea_cut,p)
                         longitud=round(linea_cut.geometry().length(),3)
-                        #print (longitud)
                         lp=linea_cut.geometry().constGet()
                         for x in range(len(posicio)):
                             if x==0:
@@ -1871,21 +1795,17 @@ class ActivitatsEconomiques:
                         f.setGeometry(newgeom)
                         feats.append(f)
                         
-                    #for x in range(Trams_id[i][1].count(lines_features[Trams_id[i][1][p.id()-1]-1].id())):
-                        
             minDistPoint = punts_id[index_punt]
             punto = QgsFeature()
             punto.setGeometry(QgsGeometry.fromPointXY(minDistPoint))
         
             punto.setAttributes([points_features.index(p),123])
             puntos.append(punto)
-            #print (trams_fets)
         for current,feat_item in enumerate(lines_features):
             if (current+1) not in idx_lines:
                 feats.append(feat_item)
         pr.addFeatures(feats)
         vl.updateExtents()
-        #outputs={}
         
         if (self.dlg.CostNusos.isChecked()):
 
@@ -1900,7 +1820,6 @@ class ActivitatsEconomiques:
                 'INPUT': vl,
                 'NEW_FIELD': False,
                 'OUTPUT': 'memory:'
-                #'OUTPUT': 'postgres: table="public"."testpep" (geom) '+uri.connectionInfo()
             }
             outputs['vel_kmh_amb_sem'] = processing.run('qgis:fieldcalculator', alg_params)
             layer=outputs['vel_kmh_amb_sem']['OUTPUT']
@@ -1925,27 +1844,7 @@ class ActivitatsEconomiques:
             'OUTPUT_LINES':'memory:'
         }
         outputs['Areaservei'] = processing.run('qgis:serviceareafromlayer', alg_params)
-#         parameters = {'INPUT': network_lyr,
-#                       'START_POINTS': punts_lyr,
-#                       'STRATEGY': 0,
-#                       'TRAVEL_COST':self.dlg.TL_Dist_Cost.text(),
-#                       'DIRECTION_FIELD': '',
-#                       'VALUE_FORWARD': '',
-#                       'VALUE_BACKWARD': '',
-#                       'VALUE_BOTH': '',
-#                       'DEFAULT_DIRECTION': 2,
-#                       'SPEED_FIELD': '',
-#                       'DEFAULT_SPEED': 1,
-#                       'TOLERANCE': 0,
-#                       'INCLUDE_BOUNDS': 0,
-#                       'OUTPUT_LINES': 'memory:',
-#                       'OUTPUT': 'memory:'}
-#         linias_graf = processing.run('qgis:serviceareafromlayer', parameters)
-        
-        #************************************************************************************
-        #************************************************************************************
-        #result_buffer = processing.run('native:buffer', {"INPUT": network_lyr,
-        # native:dissolve
+
         result_dissolve = processing.run('native:dissolve', {"INPUT": outputs['Areaservei']['OUTPUT_LINES'],
                                                              "FIELD": 'id',
                                                              "OUTPUT": 'memory:'})        
@@ -1960,7 +1859,6 @@ class ActivitatsEconomiques:
                                                          "MITER_LIMIT":1,
                                                          "DISSOLVE":0,
                                                          "OUTPUT": 'memory:'})
-                                                         #"OUTPUT": 'postgres: table="public"."testpep" (geom) '+uri2.connectionInfo()})
         
         result_buffer_dissolve = processing.run('native:dissolve', {"INPUT": result_buffer['OUTPUT'],
                                                                     "FIELD": 'id',
@@ -1992,19 +1890,10 @@ class ActivitatsEconomiques:
                 self.dlg.setEnabled(True)
                 return
 
-        #self.dlg.Progres.setVisible(False)
         Fitxer=datetime.datetime.now().strftime("%Y%m%d%H%M%S%f")
-        #consoleWidget = iface.mainWindow().findChild( QDockWidget, 'PythonConsole' )
-        #if consoleWidget is None:
-        #    iface.actionShowPythonDialog().trigger()
-        #    QApplication.processEvents()
-        #    consoleWidget = iface.mainWindow().findChild( QDockWidget, 'PythonConsole' )
-        #    consoleWidget.console.shellOut.clearConsole()
-        #    consoleWidget.setVisible( False )
 
         arxiuLlegit = False
         self.dlg.Progres.setValue(0)
-        #progress.setValue(0)
         
         self.dlg.Progres.setVisible(False)
         self.dlg.EstatConnexioFixa.setText('Processant:')
@@ -2171,8 +2060,7 @@ class ActivitatsEconomiques:
                 if (self.dlg.topo.isChecked()): #Calcul mitjançant numero de policia
                     if (self.dlg.ZIGraf_radio.isChecked()):
                         
-                        #Calcul mitjan�ant GRAF
-                        #print sql_total
+                        #Calcul mitjançant GRAF
                         progress.setValue(30)
 
                         self.dlg.Progres.setValue(30)
@@ -2187,15 +2075,9 @@ class ActivitatsEconomiques:
                                 vlayer=buffer_resultat['OUTPUT']
                                 vlayer_graf=graf_resultat['OUTPUT']
             
-                                #uri = "dbname='test' host=localhost port=5432 user='user' password='password' key=gid type=POINT table=\"public\".\"test\" (geom) sql="
-                                # layer - QGIS vector layer
                                 error = QgsVectorLayerExporter.exportLayer(vlayer, 'table="public"."Buffer_Final_'+Fitxer+'" (geom) '+uri.connectionInfo(), "postgres", vlayer.crs(), False)
                                 if error[0] != 0:
                                     iface.messageBar().pushMessage(u'Error', error[1])
-                                    
-                                #error = QgsVectorLayerExporter.exportLayer(buffer_dissolved['OUTPUT'], 'table="public"."buffer_diss_'+Fitxer+'" (geom) '+uri.connectionInfo(), "postgres", vlayer.crs(), False)
-                                #if error[0] != 0:
-                                #    iface.messageBar().pushMessage(u'Error', error[1])
                                     
                                 sql_buffer="SELECT * FROM \"Buffer_Final_"+Fitxer+"\""
                             else:
@@ -2204,15 +2086,9 @@ class ActivitatsEconomiques:
                                 vlayer=buffer_resultat['OUTPUT']
                                 vlayer_graf=graf_resultat['OUTPUT']
             
-                                #uri = "dbname='test' host=localhost port=5432 user='user' password='password' key=gid type=POINT table=\"public\".\"test\" (geom) sql="
-                                # layer - QGIS vector layer
                                 error = QgsVectorLayerExporter.exportLayer(vlayer, 'table="public"."Buffer_Final_'+Fitxer+'" (geom) '+uri.connectionInfo(), "postgres", vlayer.crs(), False)
                                 if error[0] != 0:
                                     iface.messageBar().pushMessage(u'Error', error[1])
-                                    
-                                #error = QgsVectorLayerExporter.exportLayer(buffer_dissolved['OUTPUT'], 'table="public"."buffer_diss_'+Fitxer+'" (geom) '+uri.connectionInfo(), "postgres", vlayer.crs(), False)
-                                #if error[0] != 0:
-                                #    iface.messageBar().pushMessage(u'Error', error[1])
                                     
                                 sql_buffer="SELECT * FROM \"Buffer_Final_"+Fitxer+"\""
                         
@@ -2242,31 +2118,25 @@ class ActivitatsEconomiques:
                             '''
                             cur.execute(sql_activitat)
                             conn.commit()                   
+
 #                       *****************************************************************************************************************
 #                       FI CALCUL DEL GRAF I DEL BUFFER DELS TRAMS CALCULATS 
 #                       *****************************************************************************************************************
+
                         progress.setValue(60)
                         self.dlg.Progres.setValue(60)
                         QApplication.processEvents()
-                        sql_ZI=sql_buffer #"select TOT.\"epigraph\",TOT.\"designator\",TOT.\"cadastral_reference\",TOT.\"designator\",TOT.\"area_value\",TOT.\"radi\",row_number() OVER () AS \"ogc_fid\",ST_Buffer(TOT.\"geom\","+self.dlg.Radi_ZI.text()+"::double precision) AS geom from ("+sql_buffer+") TOT"
+                        sql_ZI=sql_buffer 
                         sql_PART1_ZI="SELECT row_number() OVER () AS \"ogc_fid\",ILL.\"cadastral_zoning_reference\",ILL.\"geom\",RS.\"Habitants\" FROM (select \"zone\".\"cadastral_zoning_reference\",\"zone\".\"geom\" from \"zone\" where \"zone\".\"id_zone\" NOT IN (select \"zone\".\"id_zone\" from \"zone\" INNER JOIN ("
-                        #print "buf:"+sql_buffer
-                        #print "ZI:"+sql_ZI
-                        #print "PART1_ZI:"+sql_PART1_ZI
-                        
                         sql_TOTAL_ZI=sql_PART1_ZI+sql_ZI+") TOT2 on ST_Intersects(\"zone\".\"geom\",TOT2.\"geom\"))) ILL JOIN \"Resum_Temp_"+Fitxer+"\" RS on (ILL.\"cadastral_zoning_reference\" = RS.\"ILLES_Codificades\")"
                     else:
-                        
-                        #Calcul mitjan�ant Zona Circular
                         sql="SELECT BC.\"epigraph\",BC.\"name\",DI.\"designator\" AS \"di_designator\",DI.\"cadastral_reference\",DI.\"geom\",BC.\"designator\" AS \"bc_designator\",BC.\"area_value\",("+self.dlg.texte_2.text()+"*SQRT(BC.\"area_value\"/ PI())) AS RADI FROM (select * from \"company\" "
                         wheresql="where \"epigraph\" in "+where_sentence+") BC LEFT JOIN \"address\" DI ON (BC.\"designator\" = DI.\"designator\")"
                         sql_ZI="select TOT.\"epigraph\", TOT.\"name\", TOT.\"di_designator\",TOT.\"cadastral_reference\",TOT.\"bc_designator\",TOT.\"area_value\",TOT.\"radi\",row_number() OVER () AS \"ogc_fid\",ST_Buffer(TOT.\"geom\","+self.dlg.Radi_ZI.text()+"::double precision) AS geom from ("+sql+wheresql+") TOT"
                         sql_PART1_ZI="SELECT row_number() OVER () AS \"ogc_fid\",ILL.\"cadastral_zoning_reference\",ILL.\"geom\",RS.\"Habitants\" FROM (select \"zone\".\"cadastral_zoning_reference\",\"zone\".\"geom\" from \"zone\" where \"zone\".\"id_zone\" NOT IN (select \"zone\".\"id_zone\" from \"zone\" INNER JOIN ("
                         sql_TOTAL_ZI=sql_PART1_ZI+sql_ZI+") TOT2 on ST_Intersects(\"zone\".\"geom\",TOT2.\"geom\"))) ILL JOIN \"Resum_Temp_"+Fitxer+"\" RS on (ILL.\"cadastral_zoning_reference\" = RS.\"ILLES_Codificades\")"
                 else:
-
                     #Calcul mitjançant parceles
-               
                     sql="SELECT PA.\"geom\",PACOUNT.\"numae\",PA.\"cadastral_reference\" FROM (SELECT count(BC.\"epigraph\") as numAE , PA.\"cadastral_reference\" FROM (select * from \"company\" where \"epigraph\" in "+where_sentence+") BC LEFT JOIN \"parcel_temp\" PA ON (BC.\"cadastral_reference\" = PA.\"cadastral_reference\") WHERE (PA.\"cadastral_reference\" IS NOT NULL) AND (PA.\"cadastral_reference\"<>' ')  GROUP BY PA.\"cadastral_reference\") PACOUNT LEFT JOIN \"parcel_temp\" PA ON (PACOUNT.\"cadastral_reference\"=PA.\"cadastral_reference\") WHERE (PACOUNT.\"numae\">0) "
                     sql_ZI="select TOT.\"cadastral_reference\",TOT.\"numae\",row_number() OVER () AS \"ogc_fid\",ST_Buffer(TOT.\"geom\","+self.dlg.Radi_ZI.text()+"::double precision) as geom from ("+sql+") TOT"
                     sql_PART1_ZI="SELECT row_number() OVER () AS \"ogc_fid\",ILL.\"cadastral_zoning_reference\",ILL.\"geom\",RS.\"Habitants\" FROM (select \"zone\".\"cadastral_zoning_reference\",\"zone\".\"geom\" from \"zone\" where \"zone\".\"id_zone\" NOT IN (select \"zone\".\"id_zone\" from \"zone\" INNER JOIN ("
@@ -2334,7 +2204,6 @@ class ActivitatsEconomiques:
                                     sql_total1="SELECT id_0 AS \"ogc_fid\",id AS \"punt_id\",\"geom\", \"epigraph\",\"name\", \"di_designator\",\"area_value\",\"cadastral_reference\" FROM \"Buffer_Final_"+Fitxer+"\""
                                 else:
                                     sql_total1="SELECT row_number() OVER () AS \"ogc_fid\",\"punt_id\",\"geom\", \"epigraph\",\"name\", \"designator\",\"area_value\",\"cadastral_reference\" FROM \"Buffer_Final_"+Fitxer+"\""
-                                
                             else:
                                 sql1="SELECT BC.\"epigraph\",BC.\"name\", DI.\"designator\" AS \"di_designator\",DI.\"cadastral_reference\",DI.\"geom\",BC.\"designator\" AS \"bc_designator\",BC.\"area_value\",("+self.dlg.texte_2.text()+"*SQRT(BC.\"area_value\"/ PI())) AS RADI FROM (select * from \"company\" "
                                 wheresql1="where \"epigraph\" in "+where_sentence+") BC LEFT JOIN \"address\" DI ON (BC.\"designator\" = DI.\"designator\")"
@@ -2359,7 +2228,6 @@ class ActivitatsEconomiques:
                             symbol=symbols[0]
                             symbol.setColor(self.dlg.ColorZI.palette().color(1))
                             symbol.setOpacity(self.dlg.Transparencia.value()/100)
-
                             QgsProject.instance().addMapLayer(vlayer_temp,False)
                             root = QgsProject.instance().layerTreeRoot()
                             myLayerNode=QgsLayerTreeLayer(vlayer_temp)
@@ -2462,14 +2330,13 @@ class ActivitatsEconomiques:
         self.dlg.close()
 
     def campGeometria(self, taula):
-        '''Aquesta funci� retorna el camp de geometria de la taula que li passem per parametres'''
+        '''Aquesta funcio retorna el camp de geometria de la taula que li passem per parametres'''
         global cur
         global conn
         sql = "select f_geometry_column from geometry_columns where f_table_name = '" + taula + "'"
         #Connexio
         cur.execute(sql)
         camp = cur.fetchall()
-               
         return camp[0][0]
 
     def on_Change_ComboConn(self):
@@ -2552,8 +2419,6 @@ class ActivitatsEconomiques:
                 self.dlg.EstatConnexio.setText('Error: Problema en la connexió.')
                 self.dlg.setEnabled(True)
                 return
-           
-            
         else:
             self.dlg.EstatConnexio.setText('No connectat')
             self.dlg.EstatConnexio.setStyleSheet('border:1px solid #000000; background-color: #FFFFFF')
@@ -2589,7 +2454,6 @@ class ActivitatsEconomiques:
                 ) AS SELECT id, "EPIGRAFIAE", "NumPol", "METRES2", "CADASREF", "DESCRIPCIOACTIVITAT", "FULLNAME" FROM "BrossaComercial";
             """)
             conn.commit()
-            print("company table created")
 
             cur.execute("""
                         DROP TABLE IF EXISTS address;
@@ -2601,7 +2465,6 @@ class ActivitatsEconomiques:
                         ) AS SELECT id, geom, "REF_CADAST", "Carrer_Num_Bis" FROM "dintreilla";
                         """)
             conn.commit()
-            print("address table created")
 
             cur.execute("""
                         DROP TABLE IF EXISTS zone;
@@ -2613,7 +2476,6 @@ class ActivitatsEconomiques:
                         ) AS SELECT id, geom, "D_S_I" FROM "ILLES";
                         """)
             conn.commit()
-            print("zone table created")
 
             cur.execute("""
                         DROP TABLE IF EXISTS parcel_temp;
@@ -2625,7 +2487,6 @@ class ActivitatsEconomiques:
                         ) AS SELECT id, geom, "UTM" FROM "parcel";
                         """)
             conn.commit()
-            print("parcel_temp table created")
 
             cur.execute("""
                         DROP TABLE IF EXISTS epigraph;
@@ -2637,7 +2498,6 @@ class ActivitatsEconomiques:
                         ) AS SELECT id, "Descripcio epigraf", "Epigraf" FROM "Seccio1";
                         """)
             conn.commit()
-            print("epigraph table created")
 
             cur.execute("""
                         DROP TABLE IF EXISTS stretch;
@@ -2659,14 +2519,12 @@ class ActivitatsEconomiques:
                         ) AS SELECT id, the_geom, cost, reverse_cost, "Nombre_Semafors", "Cost_Total_Semafor_Tram", source, target, "LENGTH", "SENTIT", "PENDENT_ABS", "VELOCITAT_PS", "VELOCITAT_PS_INV" FROM "SegmentsXarxaCarrers";
                         """)
             conn.commit()
-            print("stretch table created")
         else:
             cur.execute("""
                 DROP TABLE IF EXISTS parcel_temp;
                 CREATE TABLE parcel_temp AS SELECT * FROM "parcel";
             """)
             conn.commit()
-            print("parcel_temp table created")
     
     def eliminaTaulesTemporals(self):
         global versio_db
