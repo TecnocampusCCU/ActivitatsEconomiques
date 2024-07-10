@@ -64,7 +64,7 @@ micolor_ZI=None
 micolor_Graf=None
 Fitxer=""
 Path_Inicial=expanduser("~")
-Versio_modul="V_Q3.240701"
+Versio_modul="V_Q3.240710"
 progress=None
 versio_db = ""
 
@@ -734,7 +734,8 @@ class ActivitatsEconomiques:
 #       *****************************************************************************************************************
 #       INICI CREACIO DE LA TAULA 'XARXA_GRAF' I PREPARACIO DELS CAMPS COST I REVERSE_COST
 #       *****************************************************************************************************************
-        XarxaCarrers = self.dlg.comboGraf.currentText()
+        #XarxaCarrers = self.dlg.comboGraf.currentText()
+        XarxaCarrers = "stretch"
         sql_1="DROP TABLE IF EXISTS \"Xarxa_Graf\";\n"
         """ Es fa una copia de la taula que conte el graf i s'afegeixen els camps cost i reverse_cost en funcio del que es necessiti, es creara taula local temporal per evitar problemes de concurrencia"""
         sql_1+="CREATE local temporary TABLE \"Xarxa_Graf\" as (SELECT * FROM \"" + XarxaCarrers + "\");\n"
@@ -2006,8 +2007,53 @@ class ActivitatsEconomiques:
                     
                     sql_total_graf2="select distinct on (id) TOT.\"epigraph\", TOT.\"name\",TOT.\"di_designator\",TOT.\"cadastral_reference\",TOT.\"bc_designator\",TOT.\"area_value\",TOT.\"radi\",TOT.\"id_company\" AS \"id\",TOT.\"geom\" AS geom from ("+sql+wheresql+") TOT"
                 else:
-                    sql="SELECT PA.\"geom\",PACOUNT.\"numae\",PA.\"cadastral_reference\", PACOUNT.\"id\" FROM (SELECT count(BC.\"epigraph\") as numAE , PA.\"cadastral_reference\", BC.\"id_company\" as id FROM (select * from \"company\" where \"epigraph\" in "+where_sentence+") BC LEFT JOIN \"parcel_temp\" PA ON (BC.\"cadastral_reference\" = PA.\"cadastral_reference\") WHERE (PA.\"cadastral_reference\" IS NOT NULL) AND (PA.\"cadastral_reference\"<>' ')  GROUP BY PA.\"cadastral_reference\") PACOUNT LEFT JOIN \"parcel_temp\" PA ON (PACOUNT.\"cadastral_reference\"=PA.\"cadastral_reference\") WHERE (PACOUNT.\"numae\">0) "
-                    sql_total="select distinct on (id) row_number() OVER () AS \"ogc_fid\", TOT.\"cadastral_reference\",TOT.\"numae\",TOT.\"geom\", TOT.\"id\" as geom from ("+sql+") TOT"
+                    #sql="SELECT PA.\"geom\",PACOUNT.\"numae\",PA.\"cadastral_reference\" FROM (SELECT count(BC.\"epigraph\") as numAE , PA.\"cadastral_reference\" FROM (select * from \"company\" where \"epigraph\" in "+where_sentence+") BC LEFT JOIN \"parcel_temp\" PA ON (BC.\"cadastral_reference\" = PA.\"cadastral_reference\") WHERE (PA.\"cadastral_reference\" IS NOT NULL) AND (PA.\"cadastral_reference\"<>' ')  GROUP BY PA.\"cadastral_reference\") PACOUNT LEFT JOIN \"parcel_temp\" PA ON (PACOUNT.\"cadastral_reference\"=PA.\"cadastral_reference\") WHERE (PACOUNT.\"numae\">0) "
+                    #sql_total="select TOT.\"cadastral_reference\" AS \"ogc_fid\", TOT.\"numae\",TOT.\"geom\" from ("+sql+") TOT"
+
+                    sql=f"""
+                        SELECT
+                            PA."geom",
+                            PACOUNT."numae",
+                            PA."cadastral_reference"
+                        FROM
+                            (
+                                SELECT
+                                    COUNT(BC."epigraph") AS numAE,
+                                    PA."cadastral_reference"
+                                FROM
+                                    (
+                                        SELECT
+                                            *
+                                        FROM
+                                            "company"
+                                        WHERE
+                                            "epigraph" IN {where_sentence}
+                                    ) BC
+                                LEFT JOIN
+                                    "parcel_temp" PA
+                                ON
+                                    BC."cadastral_reference" = PA."cadastral_reference"
+                                WHERE
+                                    PA."cadastral_reference" IS NOT NULL
+                                    AND PA."cadastral_reference" <> ' '
+                                GROUP BY
+                                    PA."cadastral_reference"
+                            ) PACOUNT
+                        LEFT JOIN
+                            "parcel_temp" PA
+                        ON
+                            PACOUNT."cadastral_reference" = PA."cadastral_reference"
+                        WHERE
+                            PACOUNT."numae" > 0
+                        """
+                    sql_total = f"""
+                        SELECT
+                            TOT."cadastral_reference" AS "ogc_fid",
+                            TOT."numae",
+                            TOT."geom"
+                        FROM
+                            ({sql}) TOT
+                                """
                     
                 uri = QgsDataSourceUri()
                 try:
@@ -2027,25 +2073,43 @@ class ActivitatsEconomiques:
                             self.eliminaTaulesCalcul(Fitxer)
                             self.dlg.setEnabled(True)
                             return
-                uri.setDataSource("","("+sql_total+")","geom","","ogc_fid")
+                
+                #uri.setDataSource("","("+sql_total+")","geom","","ogc_fid")
                 titol=self.dlg.texte_3.text().replace("'","\'")
                 titol2="Número de policia amb activitat: "
                 titol3=titol2.encode('utf8','strict')+titol.encode('utf8','strict')
                 #print uri.uri()
-                vlayer = QgsVectorLayer(uri.uri(), titol3.decode('utf8'), "postgres")
+                #vlayer = QgsVectorLayer(uri.uri(), titol3.decode('utf8'), "postgres")
+                alg_params = {
+                    "DATABASE": self.dlg.ComboConn.currentText(),
+                    "GEOMETRY_FIELD": "geom",
+                    "ID_FIELD": "ogc_fid",
+                    "SQL": sql_total
+                }
+                vlayer = processing.run("qgis:postgisexecuteandloadsql", alg_params)["OUTPUT"]
+                vlayer.setName(titol3.decode('utf8'))
                 #self.retorna_nom_geometria(vlayer)
                 
                 if vlayer.isValid():
                     crs = vlayer.dataProvider().sourceCrs()
-                    vlayer_temp = QgsVectorLayer(f"Point", titol3.decode('utf8'), "memory")
-                    vlayer_temp.setCrs(crs)
-                    vlayer_temp.dataProvider().addAttributes(vlayer.fields())
-                    vlayer_temp.updateFields()
-                    vlayer_temp.dataProvider().addFeatures(vlayer.getFeatures())
-                    symbols = vlayer_temp.renderer().symbols(QgsRenderContext())
-                    symbol = symbols[0]
-                    symbol.setColor(self.dlg.ColorTopos.palette().color(1))
+
+                    if not self.dlg.parcela.isChecked() and self.dlg.Mostra_punt_chk.isChecked():
+                        vlayer_temp = QgsVectorLayer(f"Point", titol3.decode('utf8'), "memory")
+                        vlayer_temp.setCrs(crs)
+                        vlayer_temp.dataProvider().addAttributes(vlayer.fields())
+                        vlayer_temp.updateFields()
+                        vlayer_temp.dataProvider().addFeatures(vlayer.getFeatures())
+                        symbols = vlayer_temp.renderer().symbols(QgsRenderContext())
+                        symbol = symbols[0]
+                        symbol.setColor(self.dlg.ColorTopos.palette().color(1))
                 
+                    else:
+                        vlayer_temp = QgsVectorLayer(f"Polygon", titol3.decode('utf8'), "memory")
+                        vlayer_temp.setCrs(crs)
+                        vlayer_temp.dataProvider().addAttributes(vlayer.fields())
+                        vlayer_temp.updateFields()
+                        vlayer_temp.dataProvider().addFeatures(vlayer.getFeatures())
+
                     QgsProject.instance().addMapLayer(vlayer_temp,False)
                     root = QgsProject.instance().layerTreeRoot()
                     myLayerNode=QgsLayerTreeLayer(vlayer_temp)
@@ -2070,8 +2134,9 @@ class ActivitatsEconomiques:
 #                       *****************************************************************************************************************                            
                         if (self.dlg.chk_calc_local.isChecked() and self.dlg.ZIGraf_radio.isChecked()):
                             if (self.dlg.GrafCombo.currentText()=="Distancia"):
-                                sql_xarxa="SELECT * FROM \""+self.dlg.comboGraf.currentText()+"\""
-                                self.calcul_graf2(sql_total_graf2,sql_xarxa,uri)
+                                #sql_xarxa="SELECT * FROM \""+self.dlg.comboGraf.currentText()+"\""
+                                sql_xarxa = "SELECT * FROM stretch"
+                                buffer_resultat,graf_resultat=self.calcul_graf2(sql_total_graf2,sql_xarxa,uri)
                                 vlayer=buffer_resultat['OUTPUT']
                                 vlayer_graf=graf_resultat['OUTPUT']
             
@@ -2081,7 +2146,8 @@ class ActivitatsEconomiques:
                                     
                                 sql_buffer="SELECT * FROM \"Buffer_Final_"+Fitxer+"\""
                             else:
-                                sql_xarxa="SELECT * FROM \""+self.dlg.comboGraf.currentText()+"\""
+                                #sql_xarxa="SELECT * FROM \""+self.dlg.comboGraf.currentText()+"\""
+                                sql_xarxa = "SELECT * FROM stretch"
                                 buffer_resultat,graf_resultat=self.calcul_graf3(sql_total_graf2,sql_xarxa,uri)
                                 vlayer=buffer_resultat['OUTPUT']
                                 vlayer_graf=graf_resultat['OUTPUT']
@@ -2499,26 +2565,32 @@ class ActivitatsEconomiques:
                         """)
             conn.commit()
 
-            cur.execute("""
-                        DROP TABLE IF EXISTS stretch;
+            if self.dlg.comboGraf.currentText() is not None or self.dlg.comboGraf.currentText() != "":
+                carrer = "SegmentsXarxaCarrers"
+            else:
+                carrer = self.dlg.comboGraf.currentText()
 
-                        CREATE TABLE stretch (
-                            id,
-                            geom,
-                            cost,
-                            reverse_cost,
-                            semaphores,
-                            total_cost_semaphore,
-                            source,
-                            target,
-                            length,
-                            direction,
-                            slope_abs,
-                            speed,
-                            reverse_speed
-                        ) AS SELECT id, the_geom, cost, reverse_cost, "Nombre_Semafors", "Cost_Total_Semafor_Tram", source, target, "LENGTH", "SENTIT", "PENDENT_ABS", "VELOCITAT_PS", "VELOCITAT_PS_INV" FROM "SegmentsXarxaCarrers";
-                        """)
-            conn.commit()
+            if self.dlg.ZIGraf_radio.isChecked():
+                cur.execute(f"""
+                            DROP TABLE IF EXISTS stretch;
+
+                            CREATE TABLE stretch (
+                                id,
+                                geom,
+                                cost,
+                                reverse_cost,
+                                semaphores,
+                                total_cost_semaphore,
+                                source,
+                                target,
+                                length,
+                                direction,
+                                slope_abs,
+                                speed,
+                                reverse_speed
+                            ) AS SELECT id, the_geom, cost, reverse_cost, "Nombre_Semafors", "Cost_Total_Semafor_Tram", source, target, "LENGTH", "SENTIT", "PENDENT_ABS", "VELOCITAT_PS", "VELOCITAT_PS_INV" FROM "{carrer}";
+                            """)
+                conn.commit()
         else:
             cur.execute("""
                 DROP TABLE IF EXISTS parcel_temp;
