@@ -64,7 +64,7 @@ micolor_ZI=None
 micolor_Graf=None
 Fitxer=""
 Path_Inicial=expanduser("~")
-Versio_modul="V_Q3.240903"
+Versio_modul="V_Q3.240912"
 progress=None
 versio_db = ""
 
@@ -443,7 +443,7 @@ class ActivitatsEconomiques:
         self.dlg.ListaActivitatsDesc.clear()
         CAMP=chr(34)+"description"+chr(34)
         CAMP2=chr(34)+"epigraph_code"+chr(34)
-        TAULA="epigraph"
+        TAULA=f"epigraph_{Fitxer}"
         sql="SELECT "+CAMP+","+CAMP2+" FROM "+chr(34)+TAULA+chr(34)
         filtre=self.dlg.barraCerca.text()
         wheresql=" WHERE UPPER("+CAMP+") LIKE UPPER ('%"+filtre+"%') order by "+CAMP+";"
@@ -480,7 +480,7 @@ class ActivitatsEconomiques:
         self.dlg.ListaActivitatsEpigraf.clear()
         CAMP=chr(34)+"description"+chr(34)
         CAMP2=chr(34)+"epigraph_code"+chr(34)
-        TAULA="epigraph"
+        TAULA=f"epigraph_{Fitxer}"
         sql="SELECT "+CAMP2+","+CAMP+" FROM "+chr(34)+TAULA+chr(34)
         filtre=self.dlg.barraCerca.text()
         wheresql=" ORDER BY "+CAMP2+";"
@@ -497,8 +497,8 @@ class ActivitatsEconomiques:
             
         except:
             self.dlg.EstatConnexio.setStyleSheet('border:1px solid #000000; background-color: #ff7f7f')
-            self.dlg.EstatConnexio.setText('Error: Hi ha algun camp erroni en la taula epigraph.')
-            self.dlg.EstatConnexio.setToolTip('Error: Hi ha algun camp erroni en la taula epigraph.')
+            self.dlg.EstatConnexio.setText(f'Error: Hi ha algun camp erroni en la taula epigraph.')
+            self.dlg.EstatConnexio.setToolTip(f'Error: Hi ha algun camp erroni en la taula epigraph.')
             print ("I am unable to connect to the database")
         
     # Create the actions 
@@ -665,7 +665,10 @@ class ActivitatsEconomiques:
         """Aquesta funció comprova si la taula que li hem passat té la seva capa de graf corresponent"""
         global cur
         global conn
-        sql = "select exists (select 1 from geometry_columns where f_table_name = '" + taula + "_vertices_pgr')"
+        if taula != 'stretch':
+            sql = "select exists (select 1 from geometry_columns where f_table_name = '" + taula + "_vertices_pgr')"
+        else:
+            sql = "select exists (select 1 from geometry_columns where f_table_name = '" + taula + f"_{Fitxer}_vertices_pgr')"
         cur.execute(sql)
         camp = cur.fetchall()
         return camp[0][0]
@@ -735,7 +738,7 @@ class ActivitatsEconomiques:
 #       INICI CREACIO DE LA TAULA 'XARXA_GRAF' I PREPARACIO DELS CAMPS COST I REVERSE_COST
 #       *****************************************************************************************************************
         #XarxaCarrers = self.dlg.comboGraf.currentText()
-        XarxaCarrers = "stretch"
+        XarxaCarrers = f"stretch_{Fitxer}"
         sql_1="DROP TABLE IF EXISTS \"Xarxa_Graf_"+Fitxer+"\";\n"
         """ Es fa una copia de la taula que conte el graf i s'afegeixen els camps cost i reverse_cost en funcio del que es necessiti, es creara taula local temporal per evitar problemes de concurrencia"""
         sql_1+="CREATE LOCAL TEMP TABLE \"Xarxa_Graf_"+Fitxer+"\" as (SELECT * FROM \"" + XarxaCarrers + "\");\n"
@@ -1456,7 +1459,7 @@ class ActivitatsEconomiques:
 
     def calcul_graf2(self,sql_punts,sql_xarxa,uri2):
         #               *****************************************************************************************************************
-        #               INICI CARREGA DE LES zone, PARCELES O PORTALS QUE QUEDEN AFECTATS PEL BUFFER DEL GRAF 
+        #               INICI CARREGA DE LES zone_{Fitxer}, PARCELES O PORTALS QUE QUEDEN AFECTATS PEL BUFFER DEL GRAF 
         #               *****************************************************************************************************************
         #                uri.setDataSource("","("+sql_total+")","geom","","id")
         
@@ -1677,7 +1680,7 @@ class ActivitatsEconomiques:
                 
     def calcul_graf3(self,sql_punts,sql_xarxa,uri2):
         #               *****************************************************************************************************************
-        #               INICI CARREGA DE LES zone, PARCELES O PORTALS QUE QUEDEN AFECTATS PEL BUFFER DEL GRAF 
+        #               INICI CARREGA DE LES zone_{Fitxer}, PARCELES O PORTALS QUE QUEDEN AFECTATS PEL BUFFER DEL GRAF 
         #               *****************************************************************************************************************
         #                uri.setDataSource("","("+sql_total+")","geom","","id")
         global Fitxer
@@ -2001,16 +2004,16 @@ class ActivitatsEconomiques:
                 where_sentence=where_sentence[:-1]+")"
                 #print where_sentence
                 if (self.dlg.topo.isChecked()):
-                    sql="SELECT distinct on (id_company) BC.\"id_company\",BC.\"name\",BC.\"epigraph\",DI.\"designator\" AS \"di_designator\",DI.\"cadastral_reference\",DI.\"geom\",BC.\"designator\" AS \"bc_designator\",BC.\"area_value\",("+self.dlg.texte_2.text()+"*SQRT(BC.\"area_value\"/ PI())) AS RADI FROM (select * from \"company\" "
-                    wheresql="where \"epigraph\" in "+where_sentence+") BC LEFT JOIN \"address\" DI ON (BC.\"designator\" = DI.\"designator\")"
+                    sql=f"SELECT distinct on (id_company) BC.\"id_company\",BC.\"name\",BC.\"epigraph\",DI.\"designator\" AS \"di_designator\",DI.\"cadastral_reference\",DI.\"geom\",BC.\"designator\" AS \"bc_designator\",BC.\"area_value\",("+self.dlg.texte_2.text()+f"*SQRT(BC.\"area_value\"/ PI())) AS RADI FROM (select * from \"company_{Fitxer}\" "
+                    wheresql=f"where \"epigraph\" in "+where_sentence+f") BC LEFT JOIN \"address_{Fitxer}\" DI ON (BC.\"designator\" = DI.\"designator\")"
                     if (self.dlg.Mostra_punt_chk.isChecked()):
-                        sql_total="select distinct on (id_company) row_number() OVER () AS \"ogc_fid\", TOT.\"epigraph\", TOT.\"name\",TOT.\"di_designator\",TOT.\"cadastral_reference\",TOT.\"bc_designator\",TOT.\"area_value\",TOT.\"radi\",TOT.\"id_company\",TOT.\"geom\" AS geom from ("+sql+wheresql+") TOT"
+                        sql_total=f"select distinct on (id_company) row_number() OVER () AS \"ogc_fid\", TOT.\"epigraph\", TOT.\"name\",TOT.\"di_designator\",TOT.\"cadastral_reference\",TOT.\"bc_designator\",TOT.\"area_value\",TOT.\"radi\",TOT.\"id_company\",TOT.\"geom\" AS geom from ("+sql+wheresql+") TOT"
                     else:
-                        sql_total="select distinct on (id_company) row_number() OVER () AS \"ogc_fid\", TOT.\"epigraph\", TOT.\"name\",TOT.\"di_designator\",TOT.\"cadastral_reference\",TOT.\"bc_designator\",TOT.\"area_value\",TOT.\"radi\",TOT.\"id_company\",ST_Buffer(TOT.\"geom\",TOT.\"radi\"::double precision) AS geom from ("+sql+wheresql+") TOT"
+                        sql_total=f"select distinct on (id_company) row_number() OVER () AS \"ogc_fid\", TOT.\"epigraph\", TOT.\"name\",TOT.\"di_designator\",TOT.\"cadastral_reference\",TOT.\"bc_designator\",TOT.\"area_value\",TOT.\"radi\",TOT.\"id_company\",ST_Buffer(TOT.\"geom\",TOT.\"radi\"::double precision) AS geom from ("+sql+wheresql+") TOT"
                     
-                    sql_total_graf2="select distinct on (id) TOT.\"epigraph\", TOT.\"name\",TOT.\"di_designator\",TOT.\"cadastral_reference\",TOT.\"bc_designator\",TOT.\"area_value\",TOT.\"radi\",TOT.\"id_company\" AS \"id\",TOT.\"geom\" AS geom from ("+sql+wheresql+") TOT WHERE TOT.\"geom\" IS NOT NULL"
+                    sql_total_graf2=f"select distinct on (id) TOT.\"epigraph\", TOT.\"name\",TOT.\"di_designator\",TOT.\"cadastral_reference\",TOT.\"bc_designator\",TOT.\"area_value\",TOT.\"radi\",TOT.\"id_company\" AS \"id\",TOT.\"geom\" AS geom from ("+sql+wheresql+") TOT WHERE TOT.\"geom\" IS NOT NULL"
                 else:
-                    #sql="SELECT PA.\"geom\",PACOUNT.\"numae\",PA.\"cadastral_reference\" FROM (SELECT count(BC.\"epigraph\") as numAE , PA.\"cadastral_reference\" FROM (select * from \"company\" where \"epigraph\" in "+where_sentence+") BC LEFT JOIN \"parcel_temp\" PA ON (BC.\"cadastral_reference\" = PA.\"cadastral_reference\") WHERE (PA.\"cadastral_reference\" IS NOT NULL) AND (PA.\"cadastral_reference\"<>' ')  GROUP BY PA.\"cadastral_reference\") PACOUNT LEFT JOIN \"parcel_temp\" PA ON (PACOUNT.\"cadastral_reference\"=PA.\"cadastral_reference\") WHERE (PACOUNT.\"numae\">0) "
+                    #sql="SELECT PA.\"geom\",PACOUNT.\"numae\",PA.\"cadastral_reference\" FROM (SELECT count(BC.\"epigraph\") as numAE , PA.\"cadastral_reference\" FROM (select * from \"company_{Fitxer}\" where \"epigraph\" in "+where_sentence+") BC LEFT JOIN \"parcel_temp_{Fitxer}\" PA ON (BC.\"cadastral_reference\" = PA.\"cadastral_reference\") WHERE (PA.\"cadastral_reference\" IS NOT NULL) AND (PA.\"cadastral_reference\"<>' ')  GROUP BY PA.\"cadastral_reference\") PACOUNT LEFT JOIN \"parcel_temp_{Fitxer}\" PA ON (PACOUNT.\"cadastral_reference\"=PA.\"cadastral_reference\") WHERE (PACOUNT.\"numae\">0) "
                     #sql_total="select TOT.\"cadastral_reference\" AS \"ogc_fid\", TOT.\"numae\",TOT.\"geom\" from ("+sql+") TOT"
 
                     sql=f"""
@@ -2028,12 +2031,12 @@ class ActivitatsEconomiques:
                                         SELECT
                                             *
                                         FROM
-                                            "company"
+                                            "company_{Fitxer}"
                                         WHERE
                                             "epigraph" IN {where_sentence}
                                     ) BC
                                 LEFT JOIN
-                                    "parcel_temp" PA
+                                    "parcel_temp_{Fitxer}" PA
                                 ON
                                     BC."cadastral_reference" = PA."cadastral_reference"
                                 WHERE
@@ -2043,7 +2046,7 @@ class ActivitatsEconomiques:
                                     PA."cadastral_reference"
                             ) PACOUNT
                         LEFT JOIN
-                            "parcel_temp" PA
+                            "parcel_temp_{Fitxer}" PA
                         ON
                             PACOUNT."cadastral_reference" = PA."cadastral_reference"
                         WHERE
@@ -2138,7 +2141,7 @@ class ActivitatsEconomiques:
                         if (self.dlg.chk_calc_local.isChecked() and self.dlg.ZIGraf_radio.isChecked()):
                             if (self.dlg.GrafCombo.currentText()=="Distancia"):
                                 #sql_xarxa="SELECT * FROM \""+self.dlg.comboGraf.currentText()+"\""
-                                sql_xarxa = "SELECT * FROM stretch"
+                                sql_xarxa = f"SELECT * FROM stretch_{Fitxer}"
                                 buffer_resultat,graf_resultat=self.calcul_graf2(sql_total_graf2,sql_xarxa,uri)
                                 vlayer=buffer_resultat['OUTPUT']
                                 vlayer_graf=graf_resultat['OUTPUT']
@@ -2150,7 +2153,7 @@ class ActivitatsEconomiques:
                                 sql_buffer="SELECT * FROM \"Buffer_Final_"+Fitxer+"\""
                             else:
                                 #sql_xarxa="SELECT * FROM \""+self.dlg.comboGraf.currentText()+"\""
-                                sql_xarxa = "SELECT * FROM stretch"
+                                sql_xarxa = f"SELECT * FROM stretch_{Fitxer}"
                                 buffer_resultat,graf_resultat=self.calcul_graf3(sql_total_graf2,sql_xarxa,uri)
                                 vlayer=buffer_resultat['OUTPUT']
                                 vlayer_graf=graf_resultat['OUTPUT']
@@ -2167,23 +2170,23 @@ class ActivitatsEconomiques:
                             if sql_buffer=="ERROR":
                                 self.dlg.setEnabled(True)
                                 return         
-                            sql_activitat = "ALTER TABLE \"Buffer_Final_"+Fitxer+"\" ADD \"name\" varchar, ADD \"epigraph\" varchar, ADD \"designator\" varchar, ADD \"area_value\" float8, ADD \"cadastral_reference\" varchar;"
+                            sql_activitat = "ALTER TABLE \"Buffer_Final_"+Fitxer+f"\" ADD \"name\" varchar, ADD \"epigraph\" varchar, ADD \"designator\" varchar, ADD \"area_value\" float8, ADD \"cadastral_reference\" varchar;"
                             cur.execute(sql_activitat)
                             conn.commit()
                             
                             sql_activitat = 'UPDATE \"Buffer_Final_'+Fitxer+'\" SET ' 
-                            sql_activitat += '\"name\" = (SELECT \"name\" FROM \"company\" WHERE \"Buffer_Final_'+Fitxer+'\".\"punt_id\" = \"company\".\"id_company\"::INTEGER),'
-                            sql_activitat += '\"epigraph\" = (SELECT \"epigraph\" FROM \"company\" WHERE \"Buffer_Final_'+Fitxer+'\".\"punt_id\" = \"company\".\"id_company\"::INTEGER),'
-                            sql_activitat += '\"designator\" = (SELECT \"designator\" FROM \"company\" WHERE \"Buffer_Final_'+Fitxer+'\".\"punt_id\" = \"company\".\"id_company\"::INTEGER),'
-                            sql_activitat += '\"area_value\" = (SELECT \"area_value\" FROM \"company\" WHERE \"Buffer_Final_'+Fitxer+'\".\"punt_id\" = \"company\".\"id_company\"::INTEGER),'
-                            sql_activitat += '\"cadastral_reference\" = (SELECT \"cadastral_reference\" FROM \"company\" WHERE \"Buffer_Final_'+Fitxer+'\".\"punt_id\" = \"company\".\"id_company\"::INTEGER);'
+                            sql_activitat += f'\"name\" = (SELECT \"name\" FROM \"company_{Fitxer}\" WHERE \"Buffer_Final_'+Fitxer+f'\".\"punt_id\" = \"company_{Fitxer}\".\"id_company\"::INTEGER),'
+                            sql_activitat += f'\"epigraph\" = (SELECT \"epigraph\" FROM \"company_{Fitxer}\" WHERE \"Buffer_Final_'+Fitxer+f'\".\"punt_id\" = \"company_{Fitxer}\".\"id_company\"::INTEGER),'
+                            sql_activitat += f'\"designator\" = (SELECT \"designator\" FROM \"company_{Fitxer}\" WHERE \"Buffer_Final_'+Fitxer+f'\".\"punt_id\" = \"company_{Fitxer}\".\"id_company\"::INTEGER),'
+                            sql_activitat += f'\"area_value\" = (SELECT \"area_value\" FROM \"company_{Fitxer}\" WHERE \"Buffer_Final_'+Fitxer+f'\".\"punt_id\" = \"company_{Fitxer}\".\"id_company\"::INTEGER),'
+                            sql_activitat += f'\"cadastral_reference\" = (SELECT \"cadastral_reference\" FROM \"company_{Fitxer}\" WHERE \"Buffer_Final_'+Fitxer+f'\".\"punt_id\" = \"company_{Fitxer}\".\"id_company\"::INTEGER);'
 
                             '''
-                            sql_activitat += '\"name\" = (SELECT \"company\".\"name\" FROM \"company\",\"Buffer_Final_'+Fitxer+'\" WHERE \"Buffer_Final_'+Fitxer+'\".\"punt_id\" = \"company\".\"id_company\"),'
-                            sql_activitat += '\"epigraph\" = (SELECT \"company\".\"epigraph\" FROM \"company\",\"Buffer_Final_'+Fitxer+'\" WHERE \"Buffer_Final_'+Fitxer+'\".\"punt_id\" = \"company\".\"id_company\"),'
-                            sql_activitat += '\"designator\" = (SELECT \"company\".\"designator\" FROM \"company\",\"Buffer_Final_'+Fitxer+'\" WHERE \"Buffer_Final_'+Fitxer+'\".\"punt_id\" = \"company\".\"id_company\"),'
-                            sql_activitat += '\"area_value\" = (SELECT \"company\".\"area_value\" FROM \"company\",\"Buffer_Final_'+Fitxer+'\" WHERE \"Buffer_Final_'+Fitxer+'\".\"punt_id\" = \"company\".\"id_company\"),'
-                            sql_activitat += '\"cadastral_reference\" = (SELECT \"company\".\"cadastral_reference\" FROM \"company\",\"Buffer_Final_'+Fitxer+'\" WHERE \"Buffer_Final_'+Fitxer+'\".\"punt_id\" = \"company\".\"id_company\");'
+                            sql_activitat += '\"name\" = (SELECT \"company_{Fitxer}\".\"name\" FROM \"company_{Fitxer}\",\"Buffer_Final_'+Fitxer+'\" WHERE \"Buffer_Final_'+Fitxer+'\".\"punt_id\" = \"company_{Fitxer}\".\"id_company\"),'
+                            sql_activitat += '\"epigraph\" = (SELECT \"company_{Fitxer}\".\"epigraph\" FROM \"company_{Fitxer}\",\"Buffer_Final_'+Fitxer+'\" WHERE \"Buffer_Final_'+Fitxer+'\".\"punt_id\" = \"company_{Fitxer}\".\"id_company\"),'
+                            sql_activitat += '\"designator\" = (SELECT \"company_{Fitxer}\".\"designator\" FROM \"company_{Fitxer}\",\"Buffer_Final_'+Fitxer+'\" WHERE \"Buffer_Final_'+Fitxer+'\".\"punt_id\" = \"company_{Fitxer}\".\"id_company\"),'
+                            sql_activitat += '\"area_value\" = (SELECT \"company_{Fitxer}\".\"area_value\" FROM \"company_{Fitxer}\",\"Buffer_Final_'+Fitxer+'\" WHERE \"Buffer_Final_'+Fitxer+'\".\"punt_id\" = \"company_{Fitxer}\".\"id_company\"),'
+                            sql_activitat += '\"cadastral_reference\" = (SELECT \"company_{Fitxer}\".\"cadastral_reference\" FROM \"company_{Fitxer}\",\"Buffer_Final_'+Fitxer+'\" WHERE \"Buffer_Final_'+Fitxer+'\".\"punt_id\" = \"company_{Fitxer}\".\"id_company\");'
                             '''
                             cur.execute(sql_activitat)
                             conn.commit()                   
@@ -2196,20 +2199,20 @@ class ActivitatsEconomiques:
                         self.dlg.Progres.setValue(60)
                         QApplication.processEvents()
                         sql_ZI=sql_buffer 
-                        sql_PART1_ZI="SELECT row_number() OVER () AS \"ogc_fid\",ILL.\"cadastral_zoning_reference\",ILL.\"geom\",RS.\"Habitants\" FROM (select \"zone\".\"cadastral_zoning_reference\",\"zone\".\"geom\" from \"zone\" where \"zone\".\"id_zone\" NOT IN (select \"zone\".\"id_zone\" from \"zone\" INNER JOIN ("
-                        sql_TOTAL_ZI=sql_PART1_ZI+sql_ZI+") TOT2 on ST_Intersects(\"zone\".\"geom\",TOT2.\"geom\"))) ILL JOIN \"Resum_Temp_"+Fitxer+"\" RS on (ILL.\"cadastral_zoning_reference\" = RS.\"ILLES_Codificades\")"
+                        sql_PART1_ZI=f"SELECT row_number() OVER () AS \"ogc_fid\",ILL.\"cadastral_zoning_reference\",ILL.\"geom\",RS.\"Habitants\" FROM (select \"zone_{Fitxer}\".\"cadastral_zoning_reference\",\"zone_{Fitxer}\".\"geom\" from \"zone_{Fitxer}\" where \"zone_{Fitxer}\".\"id_zone\" NOT IN (select \"zone_{Fitxer}\".\"id_zone\" from \"zone_{Fitxer}\" INNER JOIN ("
+                        sql_TOTAL_ZI=sql_PART1_ZI+sql_ZI+f") TOT2 on ST_Intersects(\"zone_{Fitxer}\".\"geom\",TOT2.\"geom\"))) ILL JOIN \"Resum_Temp_"+Fitxer+"\" RS on (ILL.\"cadastral_zoning_reference\" = RS.\"ILLES_Codificades\")"
                     else:
-                        sql="SELECT BC.\"epigraph\",BC.\"name\",DI.\"designator\" AS \"di_designator\",DI.\"cadastral_reference\",DI.\"geom\",BC.\"designator\" AS \"bc_designator\",BC.\"area_value\",("+self.dlg.texte_2.text()+"*SQRT(BC.\"area_value\"/ PI())) AS RADI FROM (select * from \"company\" "
-                        wheresql="where \"epigraph\" in "+where_sentence+") BC LEFT JOIN \"address\" DI ON (BC.\"designator\" = DI.\"designator\")"
-                        sql_ZI="select TOT.\"epigraph\", TOT.\"name\", TOT.\"di_designator\",TOT.\"cadastral_reference\",TOT.\"bc_designator\",TOT.\"area_value\",TOT.\"radi\",row_number() OVER () AS \"ogc_fid\",ST_Buffer(TOT.\"geom\","+self.dlg.Radi_ZI.text()+"::double precision) AS geom from ("+sql+wheresql+") TOT"
-                        sql_PART1_ZI="SELECT row_number() OVER () AS \"ogc_fid\",ILL.\"cadastral_zoning_reference\",ILL.\"geom\",RS.\"Habitants\" FROM (select \"zone\".\"cadastral_zoning_reference\",\"zone\".\"geom\" from \"zone\" where \"zone\".\"id_zone\" NOT IN (select \"zone\".\"id_zone\" from \"zone\" INNER JOIN ("
-                        sql_TOTAL_ZI=sql_PART1_ZI+sql_ZI+") TOT2 on ST_Intersects(\"zone\".\"geom\",TOT2.\"geom\"))) ILL JOIN \"Resum_Temp_"+Fitxer+"\" RS on (ILL.\"cadastral_zoning_reference\" = RS.\"ILLES_Codificades\")"
+                        sql=f"SELECT BC.\"epigraph\",BC.\"name\",DI.\"designator\" AS \"di_designator\",DI.\"cadastral_reference\",DI.\"geom\",BC.\"designator\" AS \"bc_designator\",BC.\"area_value\",("+self.dlg.texte_2.text()+f"*SQRT(BC.\"area_value\"/ PI())) AS RADI FROM (select * from \"company_{Fitxer}\" "
+                        wheresql=f"where \"epigraph\" in "+where_sentence+f") BC LEFT JOIN \"address_{Fitxer}\" DI ON (BC.\"designator\" = DI.\"designator\")"
+                        sql_ZI=f"select TOT.\"epigraph\", TOT.\"name\", TOT.\"di_designator\",TOT.\"cadastral_reference\",TOT.\"bc_designator\",TOT.\"area_value\",TOT.\"radi\",row_number() OVER () AS \"ogc_fid\",ST_Buffer(TOT.\"geom\","+self.dlg.Radi_ZI.text()+"::double precision) AS geom from ("+sql+wheresql+") TOT"
+                        sql_PART1_ZI=f"SELECT row_number() OVER () AS \"ogc_fid\",ILL.\"cadastral_zoning_reference\",ILL.\"geom\",RS.\"Habitants\" FROM (select \"zone_{Fitxer}\".\"cadastral_zoning_reference\",\"zone_{Fitxer}\".\"geom\" from \"zone_{Fitxer}\" where \"zone_{Fitxer}\".\"id_zone\" NOT IN (select \"zone_{Fitxer}\".\"id_zone\" from \"zone_{Fitxer}\" INNER JOIN ("
+                        sql_TOTAL_ZI=sql_PART1_ZI+sql_ZI+f") TOT2 on ST_Intersects(\"zone_{Fitxer}\".\"geom\",TOT2.\"geom\"))) ILL JOIN \"Resum_Temp_"+Fitxer+"\" RS on (ILL.\"cadastral_zoning_reference\" = RS.\"ILLES_Codificades\")"
                 else:
                     #Calcul mitjançant parceles
-                    sql="SELECT PA.\"geom\",PACOUNT.\"numae\",PA.\"cadastral_reference\" FROM (SELECT count(BC.\"epigraph\") as numAE , PA.\"cadastral_reference\" FROM (select * from \"company\" where \"epigraph\" in "+where_sentence+") BC LEFT JOIN \"parcel_temp\" PA ON (BC.\"cadastral_reference\" = PA.\"cadastral_reference\") WHERE (PA.\"cadastral_reference\" IS NOT NULL) AND (PA.\"cadastral_reference\"<>' ')  GROUP BY PA.\"cadastral_reference\") PACOUNT LEFT JOIN \"parcel_temp\" PA ON (PACOUNT.\"cadastral_reference\"=PA.\"cadastral_reference\") WHERE (PACOUNT.\"numae\">0) "
-                    sql_ZI="select TOT.\"cadastral_reference\",TOT.\"numae\",row_number() OVER () AS \"ogc_fid\",ST_Buffer(TOT.\"geom\","+self.dlg.Radi_ZI.text()+"::double precision) as geom from ("+sql+") TOT"
-                    sql_PART1_ZI="SELECT row_number() OVER () AS \"ogc_fid\",ILL.\"cadastral_zoning_reference\",ILL.\"geom\",RS.\"Habitants\" FROM (select \"zone\".\"cadastral_zoning_reference\",\"zone\".\"geom\" from \"zone\" where \"zone\".\"id_zone\" NOT IN (select \"zone\".\"id_zone\" from \"zone\" INNER JOIN ("
-                    sql_TOTAL_ZI=sql_PART1_ZI+sql_ZI+") TOT2 on ST_Intersects(\"zone\".\"geom\",TOT2.\"geom\"))) ILL JOIN \"Resum_Temp_"+Fitxer+"\" RS on (ILL.\"cadastral_zoning_reference\" = RS.\"ILLES_Codificades\")"
+                    sql=f"SELECT PA.\"geom\",PACOUNT.\"numae\",PA.\"cadastral_reference\" FROM (SELECT count(BC.\"epigraph\") as numAE , PA.\"cadastral_reference\" FROM (select * from \"company_{Fitxer}\" where \"epigraph\" in "+where_sentence+f") BC LEFT JOIN \"parcel_temp_{Fitxer}\" PA ON (BC.\"cadastral_reference\" = PA.\"cadastral_reference\") WHERE (PA.\"cadastral_reference\" IS NOT NULL) AND (PA.\"cadastral_reference\"<>' ')  GROUP BY PA.\"cadastral_reference\") PACOUNT LEFT JOIN \"parcel_temp_{Fitxer}\" PA ON (PACOUNT.\"cadastral_reference\"=PA.\"cadastral_reference\") WHERE (PACOUNT.\"numae\">0) "
+                    sql_ZI=f"select TOT.\"cadastral_reference\",TOT.\"numae\",row_number() OVER () AS \"ogc_fid\",ST_Buffer(TOT.\"geom\","+self.dlg.Radi_ZI.text()+"::double precision) as geom from ("+sql+") TOT"
+                    sql_PART1_ZI=f"SELECT row_number() OVER () AS \"ogc_fid\",ILL.\"cadastral_zoning_reference\",ILL.\"geom\",RS.\"Habitants\" FROM (select \"zone_{Fitxer}\".\"cadastral_zoning_reference\",\"zone_{Fitxer}\".\"geom\" from \"zone_{Fitxer}\" where \"zone_{Fitxer}\".\"id_zone\" NOT IN (select \"zone_{Fitxer}\".\"id_zone\" from \"zone_{Fitxer}\" INNER JOIN ("
+                    sql_TOTAL_ZI=sql_PART1_ZI+sql_ZI+f") TOT2 on ST_Intersects(\"zone_{Fitxer}\".\"geom\",TOT2.\"geom\"))) ILL JOIN \"Resum_Temp_"+Fitxer+"\" RS on (ILL.\"cadastral_zoning_reference\" = RS.\"ILLES_Codificades\")"
                 
                 uri.setDataSource("","("+sql_TOTAL_ZI+")","geom","","ogc_fid")
                 if (self.dlg.RelacionarPoblacio.isChecked()):
@@ -2270,15 +2273,15 @@ class ActivitatsEconomiques:
                         if self.dlg.topo.isChecked():
                             if (self.dlg.ZIGraf_radio.isChecked()):
                                 if (self.dlg.chk_calc_local.isChecked() and self.dlg.ZIGraf_radio.isChecked()):
-                                    sql_total1="SELECT id_0 AS \"ogc_fid\",id AS \"punt_id\",\"geom\", \"epigraph\",\"name\", \"di_designator\",\"area_value\",\"cadastral_reference\" FROM \"Buffer_Final_"+Fitxer+"\""
+                                    sql_total1=f"SELECT id_0 AS \"ogc_fid\",id AS \"punt_id\",\"geom\", \"epigraph\",\"name\", \"di_designator\",\"area_value\",\"cadastral_reference\" FROM \"Buffer_Final_"+Fitxer+"\""
                                 else:
-                                    sql_total1="SELECT row_number() OVER () AS \"ogc_fid\",\"punt_id\",\"geom\", \"epigraph\",\"name\", \"designator\",\"area_value\",\"cadastral_reference\" FROM \"Buffer_Final_"+Fitxer+"\""
+                                    sql_total1=f"SELECT row_number() OVER () AS \"ogc_fid\",\"punt_id\",\"geom\", \"epigraph\",\"name\", \"designator\",\"area_value\",\"cadastral_reference\" FROM \"Buffer_Final_"+Fitxer+"\""
                             else:
-                                sql1="SELECT BC.\"epigraph\",BC.\"name\", DI.\"designator\" AS \"di_designator\",DI.\"cadastral_reference\",DI.\"geom\",BC.\"designator\" AS \"bc_designator\",BC.\"area_value\",("+self.dlg.texte_2.text()+"*SQRT(BC.\"area_value\"/ PI())) AS RADI FROM (select * from \"company\" "
-                                wheresql1="where \"epigraph\" in "+where_sentence+") BC LEFT JOIN \"address\" DI ON (BC.\"designator\" = DI.\"designator\")"
-                                sql_total1="select TOT.\"epigraph\",TOT.\"name\", TOT.\"di_designator\",TOT.\"cadastral_reference\",TOT.\"bc_designator\",TOT.\"area_value\",TOT.\"radi\",row_number() OVER () AS \"ogc_fid\",ST_Buffer(TOT.\"geom\","+self.dlg.Radi_ZI.text()+"::double precision) AS geom from ("+sql+wheresql+") TOT"
+                                sql1=f"SELECT BC.\"epigraph\",BC.\"name\", DI.\"designator\" AS \"di_designator\",DI.\"cadastral_reference\",DI.\"geom\",BC.\"designator\" AS \"bc_designator\",BC.\"area_value\",("+self.dlg.texte_2.text()+f"*SQRT(BC.\"area_value\"/ PI())) AS RADI FROM (select * from \"company_{Fitxer}\" "
+                                wheresql1=f"where \"epigraph\" in "+where_sentence+f") BC LEFT JOIN \"address_{Fitxer}\" DI ON (BC.\"designator\" = DI.\"designator\")"
+                                sql_total1=f"select TOT.\"epigraph\",TOT.\"name\", TOT.\"di_designator\",TOT.\"cadastral_reference\",TOT.\"bc_designator\",TOT.\"area_value\",TOT.\"radi\",row_number() OVER () AS \"ogc_fid\",ST_Buffer(TOT.\"geom\","+self.dlg.Radi_ZI.text()+"::double precision) AS geom from ("+sql+wheresql+") TOT"
                         else:
-                            sql="SELECT PA.\"geom\",PACOUNT.\"numae\",PA.\"cadastral_reference\" FROM (SELECT count(BC.\"epigraph\") as numAE , PA.\"cadastral_reference\" FROM (select * from \"company\" where \"epigraph\" in "+where_sentence+") BC LEFT JOIN \"parcel_temp\" PA ON (BC.\"cadastral_reference\" = PA.\"cadastral_reference\") WHERE (PA.\"cadastral_reference\" IS NOT NULL) AND (PA.\"cadastral_reference\"<>' ')  GROUP BY PA.\"cadastral_reference\") PACOUNT LEFT JOIN \"parcel_temp\" PA ON (PACOUNT.\"cadastral_reference\"=PA.\"cadastral_reference\") WHERE (PACOUNT.\"numae\">0) "
+                            sql=f"SELECT PA.\"geom\",PACOUNT.\"numae\",PA.\"cadastral_reference\" FROM (SELECT count(BC.\"epigraph\") as numAE , PA.\"cadastral_reference\" FROM (select * from \"company_{Fitxer}\" where \"epigraph\" in "+where_sentence+f") BC LEFT JOIN \"parcel_temp_{Fitxer}\" PA ON (BC.\"cadastral_reference\" = PA.\"cadastral_reference\") WHERE (PA.\"cadastral_reference\" IS NOT NULL) AND (PA.\"cadastral_reference\"<>' ')  GROUP BY PA.\"cadastral_reference\") PACOUNT LEFT JOIN \"parcel_temp_{Fitxer}\" PA ON (PACOUNT.\"cadastral_reference\"=PA.\"cadastral_reference\") WHERE (PACOUNT.\"numae\">0) "
                             sql_total1="select TOT.\"cadastral_reference\" as \"ogc_fid\",TOT.\"numae\",ST_Buffer(TOT.\"geom\","+self.dlg.Radi_ZI.text()+"::double precision) as geom from ("+sql+") TOT"
                             
                         uri.setDataSource("","("+sql_total1+")","geom","","ogc_fid")
@@ -2508,9 +2511,9 @@ class ActivitatsEconomiques:
         versio_db = cur.fetchone()[0]
 
         if versio_db == '1.0':
-            cur.execute("""
-                DROP TABLE IF EXISTS company;
-                CREATE TABLE company (
+            cur.execute(f"""
+                DROP TABLE IF EXISTS company_{Fitxer};
+                CREATE TABLE company_{Fitxer} (
                     id_company,
                     epigraph,
                     designator,
@@ -2522,9 +2525,9 @@ class ActivitatsEconomiques:
             """)
             conn.commit()
 
-            cur.execute("""
-                        DROP TABLE IF EXISTS address;
-                        CREATE TABLE address (
+            cur.execute(f"""
+                        DROP TABLE IF EXISTS address_{Fitxer};
+                        CREATE TABLE address_{Fitxer} (
                             id_address,
                             geom,
                             cadastral_reference,
@@ -2533,10 +2536,10 @@ class ActivitatsEconomiques:
                         """)
             conn.commit()
 
-            cur.execute("""
-                        DROP TABLE IF EXISTS zone;
+            cur.execute(f"""
+                        DROP TABLE IF EXISTS zone_{Fitxer};
 
-                        CREATE TABLE zone (
+                        CREATE TABLE zone_{Fitxer} (
                             id_zone,
                             geom,
                             cadastral_zoning_reference
@@ -2544,10 +2547,10 @@ class ActivitatsEconomiques:
                         """)
             conn.commit()
 
-            cur.execute("""
-                        DROP TABLE IF EXISTS parcel_temp;
+            cur.execute(f"""
+                        DROP TABLE IF EXISTS parcel_temp_{Fitxer};
 
-                        CREATE TABLE parcel_temp (
+                        CREATE TABLE parcel_temp_{Fitxer} (
                             id_parcel,
                             geom,
                             cadastral_reference
@@ -2555,10 +2558,10 @@ class ActivitatsEconomiques:
                         """)
             conn.commit()
 
-            cur.execute("""
-                        DROP TABLE IF EXISTS epigraph;
+            cur.execute(f"""
+                        DROP TABLE IF EXISTS epigraph_{Fitxer};
 
-                        CREATE TABLE epigraph (
+                        CREATE TABLE epigraph_{Fitxer} (
                             id_epigraph,
                             description,
                             epigraph_code
@@ -2573,9 +2576,9 @@ class ActivitatsEconomiques:
 
             if self.dlg.ZIGraf_radio.isChecked():
                 cur.execute(f"""
-                            DROP TABLE IF EXISTS stretch;
+                            DROP TABLE IF EXISTS stretch_{Fitxer};
 
-                            CREATE TABLE stretch (
+                            CREATE TABLE stretch_{Fitxer} (
                                 id,
                                 geom,
                                 cost,
@@ -2593,32 +2596,126 @@ class ActivitatsEconomiques:
                             """)
                 conn.commit()
                 cur.execute(f"""
-                            SELECT pgr_createTopology('stretch', 0.0001, 'geom', 'id', 'source', 'target', clean:=true);
+                            SELECT pgr_createTopology('stretch_{Fitxer}', 0.0001, 'geom', 'id', 'source', 'target', clean:=true);
                             """)
         else:
-            cur.execute("""
-                DROP TABLE IF EXISTS parcel_temp;
-                CREATE TABLE parcel_temp AS SELECT * FROM "parcel";
-            """)
-            conn.commit()
+            try:
+                cur.execute(f"""
+                    DROP TABLE IF EXISTS parcel_temp_{Fitxer};
+                    CREATE TABLE parcel_temp_{Fitxer} AS SELECT * FROM "parcel";
+                """)
+                conn.commit()
+            except Exception as ex:
+                print ("I am unable to connect to the database")
+                template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+                message = template.format(type(ex).__name__, ex.args)
+                print (message)
+                QMessageBox.information(None, "Error", "Error canvi connexió")
+                conn.rollback()
+                self.dlg.ComboConn.setCurrentIndex(0)
+                self.dlg.lblEstatConn.setStyleSheet('border:1px solid #000000; background-color: #ff7f7f')
+                self.dlg.EstatConnexio.setText('Error: Problema en la connexió.')
+                self.dlg.setEnabled(True)
+                return
+            try:
+                cur.execute(f"""DROP TABLE IF EXISTS address_{Fitxer};
+                                CREATE TABLE address_{Fitxer} AS SELECT * FROM "address";""")
+                conn.commit()
+            except Exception as ex:
+                print ("I am unable to connect to the database")
+                template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+                message = template.format(type(ex).__name__, ex.args)
+                print (message)
+                QMessageBox.information(None, "Error", "Error canvi connexió")
+                conn.rollback()
+                self.dlg.ComboConn.setCurrentIndex(0)
+                self.dlg.lblEstatConn.setStyleSheet('border:1px solid #000000; background-color: #ff7f7f')
+                self.dlg.EstatConnexio.setText('Error: Problema en la connexió.')
+                self.dlg.setEnabled(True)
+                return
+            try:
+                cur.execute(f"""DROP TABLE IF EXISTS zone_{Fitxer};
+                                CREATE TABLE zone_{Fitxer} AS SELECT * FROM "zone";""")
+                conn.commit()
+            except Exception as ex:
+                print ("I am unable to connect to the database")
+                template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+                message = template.format(type(ex).__name__, ex.args)
+                print (message)
+                QMessageBox.information(None, "Error", "Error canvi connexió")
+                conn.rollback()
+                self.dlg.ComboConn.setCurrentIndex(0)
+                self.dlg.lblEstatConn.setStyleSheet('border:1px solid #000000; background-color: #ff7f7f')
+                self.dlg.EstatConnexio.setText('Error: Problema en la connexió.')
+                self.dlg.setEnabled(True)
+                return
+            try:
+                cur.execute(f"""DROP TABLE IF EXISTS company_{Fitxer};
+                                CREATE TABLE company_{Fitxer} AS SELECT * FROM "company";""")
+                conn.commit()
+            except Exception as ex:
+                print ("I am unable to connect to the database")
+                template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+                message = template.format(type(ex).__name__, ex.args)
+                print (message)
+                QMessageBox.information(None, "Error", "Error canvi connexió")
+                conn.rollback()
+                self.dlg.ComboConn.setCurrentIndex(0)
+                self.dlg.lblEstatConn.setStyleSheet('border:1px solid #000000; background-color: #ff7f7f')
+                self.dlg.EstatConnexio.setText('Error: Problema en la connexió.')
+                self.dlg.setEnabled(True)
+                return
+            try:
+                cur.execute(f"""DROP TABLE IF EXISTS epigraph_{Fitxer};
+                                CREATE TABLE epigraph_{Fitxer} AS SELECT * FROM "epigraph";""")
+                conn.commit()
+            except Exception as ex:
+                print ("I am unable to connect to the database")
+                template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+                message = template.format(type(ex).__name__, ex.args)
+                print (message)
+                QMessageBox.information(None, "Error", "Error canvi connexió")
+                conn.rollback()
+                self.dlg.ComboConn.setCurrentIndex(0)
+                self.dlg.lblEstatConn.setStyleSheet('border:1px solid #000000; background-color: #ff7f7f')
+                self.dlg.EstatConnexio.setText('Error: Problema en la connexió.')
+                self.dlg.setEnabled(True)
+                return
+            if self.dlg.ZIGraf_radio.isChecked():
+                try:
+                    cur.execute(f"""DROP TABLE IF EXISTS stretch_{Fitxer};
+                                    CREATE TABLE stretch_{Fitxer} AS SELECT * FROM "stretch";""")
+                    conn.commit()
+                    cur.execute(f"""SELECT pgr_createTopology('stretch_{Fitxer}', 0.0001, 'geom', 'id', 'source', 'target', clean:=true);""")
+                    conn.commit()
+                except Exception as ex:
+                    print ("I am unable to connect to the database")
+                    template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+                    message = template.format(type(ex).__name__, ex.args)
+                    print (message)
+                    QMessageBox.information(None, "Error", "Error canvi connexió")
+                    conn.rollback()
+                    self.dlg.ComboConn.setCurrentIndex(0)
+                    self.dlg.lblEstatConn.setStyleSheet('border:1px solid #000000; background-color: #ff7f7f')
+                    self.dlg.EstatConnexio.setText('Error: Problema en la connexió.')
+                    self.dlg.setEnabled(True)
+                    return
     
     def eliminaTaulesTemporals(self):
         global versio_db
         global cur
         global conn
 
-        if versio_db == '1.0':
-            sql = "DROP TABLE IF EXISTS company;\n"
-            sql += "DROP TABLE IF EXISTS address;\n"
-            sql += "DROP TABLE IF EXISTS zone;\n"
-            sql += "DROP TABLE IF EXISTS parcel_temp;\n"
-            sql += "DROP TABLE IF EXISTS epigraph;\n"
-            sql += "DROP TABLE IF EXISTS stretch;\n"
-            cur.execute(sql)
-            conn.commit()
-        else:
-            cur.execute("DROP TABLE IF EXISTS parcel_temp;")
-            conn.commit()
+        
+        sql = f"DROP TABLE IF EXISTS company_{Fitxer};\n"
+        sql += f"DROP TABLE IF EXISTS address_{Fitxer};\n"
+        sql += f"DROP TABLE IF EXISTS zone_{Fitxer};\n"
+        sql += f"DROP TABLE IF EXISTS parcel_temp_{Fitxer};\n"
+        sql += f"DROP TABLE IF EXISTS epigraph_{Fitxer};\n"
+        sql += f"DROP TABLE IF EXISTS stretch_{Fitxer};\n"
+        sql += f"DROP TABLE IF EXISTS stretch_{Fitxer}_vertices_pgr;\n"
+        cur.execute(sql)
+        conn.commit()
 
     def ompleCombos(self, combo, llista, predef, sort):
             """Aquesta funció omple els combos que li passem per paràmetres"""
