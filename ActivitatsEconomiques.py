@@ -64,7 +64,7 @@ micolor_ZI=None
 micolor_Graf=None
 Fitxer=""
 Path_Inicial=expanduser("~")
-Versio_modul="V_Q3.240912"
+Versio_modul="V_Q3.240920"
 progress=None
 versio_db = ""
 
@@ -1897,8 +1897,6 @@ class ActivitatsEconomiques:
                 self.dlg.setEnabled(True)
                 return
 
-        Fitxer=datetime.datetime.now().strftime("%Y%m%d%H%M%S%f")
-
         arxiuLlegit = False
         self.dlg.Progres.setValue(0)
         
@@ -2474,7 +2472,7 @@ class ActivitatsEconomiques:
             try:
                 self.cercaDescripcio()
                 self.cercaEpigraf()
-                sql = "select f_table_name from geometry_columns where ((type = 'MULTILINESTRING' or type = 'LINESTRING') and f_table_schema ='public') order by 1"
+                sql = "select f_table_name from geometry_columns where ((type = 'MULTILINESTRING' or type = 'LINESTRING') and f_table_schema ='public' and f_table_name NOT LIKE '%ccu_temp%') order by 1"
                 cur.execute(sql)
                 layersList= cur.fetchall()
                 self.ompleCombos(self.dlg.comboGraf, layersList, 'Selecciona una entitat', True)
@@ -2744,12 +2742,15 @@ class ActivitatsEconomiques:
             combo.blockSignals (False)
 
     def run(self):
+        global Fitxer
         """Aquesta funcio executa el plugin"""
         conn=self.getConnections()
         self.EstatInicial()
         """Run method that performs all the real work"""
         # show the dialog
         self.dlg.show()
+
+        Fitxer="ccu_temp"+datetime.datetime.now().strftime("%Y%m%d%H%M%S%f")
         
         #layers = QgsMapLayerRegistry.instance().mapLayers().values()
         self.populateComboBox(self.dlg.ComboConn ,conn,'Selecciona connexió',True)
