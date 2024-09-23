@@ -64,7 +64,7 @@ micolor_ZI=None
 micolor_Graf=None
 Fitxer=""
 Path_Inicial=expanduser("~")
-Versio_modul="V_Q3.240920"
+Versio_modul="V_Q3.240923"
 progress=None
 versio_db = ""
 
@@ -119,6 +119,9 @@ class ActivitatsEconomiques:
         self.dlg.ZIGraf_radio.toggled.connect(self.on_toggled_ZIGraf_radio)
         self.dlg.parcela.toggled.connect(self.on_toggled_parcela)
         self.dlg.Transparencia.valueChanged.connect(self.on_valuechange_Transparencia)
+
+        self.dlg.rejected.connect(self.on_click_Sortir)
+
         # Declare instance attributes
         self.actions = []
         self.menu = self.tr('&CCU')
@@ -2397,6 +2400,8 @@ class ActivitatsEconomiques:
     def on_click_Sortir(self):
         """Aquesta funcio tanca el plugin"""
         self.EstatInicial()
+        self.eliminaTaulesCalcul(Fitxer)
+        self.eliminaTaulesTemporals()
         self.dlg.close()
 
     def campGeometria(self, taula):
