@@ -26,6 +26,7 @@ import datetime
 import os
 import os.path
 import time
+import numpy as np
 from os.path import expanduser
 
 import processing
@@ -36,12 +37,12 @@ from PyQt5.QtSql import *
 from PyQt5.QtWidgets import (QAction, QApplication, QColorDialog,
                              QDialogButtonBox, QFileDialog, QGridLayout,
                              QMessageBox, QProgressBar, QSizePolicy, QToolBar)
-from qgis.core import (Qgis, QgsCoordinateReferenceSystem, QgsDataSourceUri,
-                       QgsFeature, QgsFillSymbol, QgsGeometry,
+from qgis.core import (Qgis, QgsClassificationQuantile, QgsCoordinateReferenceSystem, 
+                       QgsDataSourceUri, QgsFeature, QgsFillSymbol, QgsGeometry,
                        QgsGradientColorRamp, QgsGraduatedSymbolRenderer,
                        QgsLayerTreeLayer, QgsProject, QgsRenderContext,
-                       QgsRendererRangeLabelFormat, QgsVectorLayer,
-                       QgsVectorLayerExporter)
+                       QgsRendererRange, QgsRendererRangeLabelFormat, 
+                       QgsVectorLayer, QgsVectorLayerExporter)
 from qgis.gui import QgsMessageBar
 from qgis.PyQt.QtCore import QCoreApplication, QSettings, QTranslator
 from qgis.utils import iface
@@ -64,7 +65,7 @@ micolor_ZI=None
 micolor_Graf=None
 Fitxer=""
 Path_Inicial=expanduser("~")
-Versio_modul="V_Q3.240923"
+Versio_modul="V_Q3.250212"
 progress=None
 versio_db = ""
 
@@ -2229,21 +2230,20 @@ class ActivitatsEconomiques:
                         fieldname="Habitants"
                         numberOfClasses=5
                         mysymbol=QgsFillSymbol()
-                        if (self.dlg.ColorDegradat.currentText()=='Gris'):
-                            colorRamp=QgsGradientColorRamp( QColor( 230, 230, 230 ), QColor( 60, 60, 60 ))
-                        elif (self.dlg.ColorDegradat.currentText()=='Vermell'):
-                            colorRamp=QgsGradientColorRamp( QColor( 255, 154, 154 ), QColor( 154, 0, 0 ))
-                        elif (self.dlg.ColorDegradat.currentText()=='Groc'):
-                            colorRamp=QgsGradientColorRamp( QColor( 255, 255, 154 ), QColor( 154, 154, 0 ))
-                        elif (self.dlg.ColorDegradat.currentText()=='Blau'):
-                            colorRamp=QgsGradientColorRamp( QColor( 154, 255, 255 ), QColor( 0, 0, 154 ))
-                        elif (self.dlg.ColorDegradat.currentText()=='Verd'):
-                            colorRamp=QgsGradientColorRamp( QColor( 154, 255, 154 ), QColor( 0, 154, 0 ))
-                        
-                        format = QgsRendererRangeLabelFormat()
-                        format.setFormat("%1 - %2 habitants")
-                        format.setPrecision(0)
-                        format.setTrimTrailingZeroes(True)
+                        colors = {
+                            'Gris': QgsGradientColorRamp( QColor( 230, 230, 230 ), QColor( 60, 60, 60 )),
+                            'Vermell': QgsGradientColorRamp( QColor( 255, 154, 154 ), QColor( 154, 0, 0 )),
+                            'Groc': QgsGradientColorRamp( QColor( 255, 255, 154 ), QColor( 154, 154, 0 )),
+                            'Blau': QgsGradientColorRamp( QColor( 154, 255, 255 ), QColor( 0, 0, 154 )),
+                            'Verd': QgsGradientColorRamp( QColor( 154, 255, 154 ), QColor( 0, 154, 0 ))
+                        }
+                        #colorRamp = colors[self.dlg.ColorDegradat.currentText()]
+                        colorRamp = colors.get(self.dlg.ColorDegradat.currentText(), QgsGradientColorRamp(QColor(255,255,255), QColor(0,0,0)))
+
+                        #format = QgsRendererRangeLabelFormat()
+                        #format.setFormat("%1 - %2 habitants")
+                        #format.setPrecision(0)
+                        #format.setTrimTrailingZeroes(True)
 
                         crs = vlayer.dataProvider().sourceCrs()
                         
@@ -2252,8 +2252,37 @@ class ActivitatsEconomiques:
                         vlayer_temp.dataProvider().addAttributes(vlayer.fields())
                         vlayer_temp.updateFields()
                         vlayer_temp.dataProvider().addFeatures(vlayer.getFeatures())
-                        renderer=QgsGraduatedSymbolRenderer.createRenderer(vlayer_temp,fieldname,numberOfClasses,QgsGraduatedSymbolRenderer.Quantile,mysymbol,colorRamp)
-                        renderer.setLabelFormat(format,True)
+                        
+                        #renderer=QgsGraduatedSymbolRenderer.createRenderer(vlayer_temp,fieldname,numberOfClasses,QgsGraduatedSymbolRenderer.Quantile,mysymbol,colorRamp)
+
+                        field_index = vlayer_temp.fields().indexFromName(fieldname)
+                        values = [feature[field_index] for feature in vlayer_temp.getFeatures() if isinstance(feature[field_index], (int, float))]
+                        breaks = np.percentile(values, np.linspace(0, 100, numberOfClasses + 1))
+                        breaks = np.unique(breaks)
+
+                        ranges = []
+                        for i in range(len(breaks) - 1):
+                            lower_bound = breaks[i]
+                            upper_bound = breaks[i + 1]
+                            step = float(i) / max(1, numberOfClasses - 1)
+                            color = colorRamp.color(step)
+                            symbol = mysymbol.clone()
+                            symbol.setColor(color)
+                            range_label = f"{lower_bound:.0f} - {upper_bound:.0f}"
+                            ranges.append(QgsRendererRange(lower_bound, upper_bound, symbol, range_label))
+
+                        #renderer=QgsGraduatedSymbolRenderer.createRenderer(vlayer_temp,fieldname,numberOfClasses,QgsGraduatedSymbolRenderer.Quantile,mysymbol,colorRamp)
+                        renderer = QgsGraduatedSymbolRenderer(fieldname, ranges)
+                        renderer.updateClasses(vlayer_temp, numberOfClasses)
+                        renderer.setClassificationMethod(QgsClassificationQuantile())
+                        renderer.setSourceSymbol(mysymbol)
+                        renderer.setSourceColorRamp(colorRamp)
+                        renderer.updateSymbols(mysymbol)
+                        renderer.updateColorRamp(colorRamp)
+
+                        #renderer.setClassificationMethod(format)
+
+                        #renderer.setLabelFormat(format,True)
                         vlayer_temp.setRenderer(renderer)
                         
                         
