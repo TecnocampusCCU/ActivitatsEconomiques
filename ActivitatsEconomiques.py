@@ -26,10 +26,9 @@ import datetime
 import os
 import os.path
 import time
-import numpy as np
 from os.path import expanduser
 
-import processing
+import processing # type: ignore
 import psycopg2
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
@@ -41,7 +40,6 @@ from qgis.core import (Qgis, QgsClassificationQuantile, QgsCoordinateReferenceSy
                        QgsDataSourceUri, QgsFeature, QgsFillSymbol, QgsGeometry,
                        QgsGradientColorRamp, QgsGraduatedSymbolRenderer,
                        QgsLayerTreeLayer, QgsProject, QgsRenderContext,
-                       QgsRendererRange, QgsRendererRangeLabelFormat, 
                        QgsVectorLayer, QgsVectorLayerExporter)
 from qgis.gui import QgsMessageBar
 from qgis.PyQt.QtCore import QCoreApplication, QSettings, QTranslator
@@ -65,7 +63,7 @@ micolor_ZI=None
 micolor_Graf=None
 Fitxer=""
 Path_Inicial=expanduser("~")
-Versio_modul="V_Q3.250212"
+Versio_modul="V_Q3.250217"
 progress=None
 versio_db = ""
 
@@ -2255,37 +2253,18 @@ class ActivitatsEconomiques:
                         
                         #renderer=QgsGraduatedSymbolRenderer.createRenderer(vlayer_temp,fieldname,numberOfClasses,QgsGraduatedSymbolRenderer.Quantile,mysymbol,colorRamp)
 
-                        field_index = vlayer_temp.fields().indexFromName(fieldname)
-                        values = [feature[field_index] for feature in vlayer_temp.getFeatures() if isinstance(feature[field_index], (int, float))]
-                        breaks = np.percentile(values, np.linspace(0, 100, numberOfClasses + 1))
-                        breaks = np.unique(breaks)
-
-                        ranges = []
-                        for i in range(len(breaks) - 1):
-                            lower_bound = breaks[i]
-                            upper_bound = breaks[i + 1]
-                            step = float(i) / max(1, numberOfClasses - 1)
-                            color = colorRamp.color(step)
-                            symbol = mysymbol.clone()
-                            symbol.setColor(color)
-                            range_label = f"{lower_bound:.0f} - {upper_bound:.0f}"
-                            ranges.append(QgsRendererRange(lower_bound, upper_bound, symbol, range_label))
-
-                        #renderer=QgsGraduatedSymbolRenderer.createRenderer(vlayer_temp,fieldname,numberOfClasses,QgsGraduatedSymbolRenderer.Quantile,mysymbol,colorRamp)
-                        renderer = QgsGraduatedSymbolRenderer(fieldname, ranges)
-                        renderer.updateClasses(vlayer_temp, numberOfClasses)
-                        renderer.setClassificationMethod(QgsClassificationQuantile())
+                        renderer = QgsGraduatedSymbolRenderer()
+                        renderer.setClassAttribute(fieldname)
                         renderer.setSourceSymbol(mysymbol)
                         renderer.setSourceColorRamp(colorRamp)
-                        renderer.updateSymbols(mysymbol)
-                        renderer.updateColorRamp(colorRamp)
-
-                        #renderer.setClassificationMethod(format)
-
-                        #renderer.setLabelFormat(format,True)
+                        classification_method = QgsClassificationQuantile()
+                        classification_method.setLabelFormat("%1 - %2 habitants")
+                        classification_method.setLabelPrecision(0)
+                        classification_method.setLabelTrimTrailingZeroes(True)
+                        renderer.setClassificationMethod(classification_method)
+                        renderer.updateClasses(vlayer_temp, numberOfClasses)
                         vlayer_temp.setRenderer(renderer)
-                        
-                        
+
                         QgsProject.instance().addMapLayer(vlayer_temp,False)
                         root = QgsProject.instance().layerTreeRoot()
                         myLayerNode=QgsLayerTreeLayer(vlayer_temp)
